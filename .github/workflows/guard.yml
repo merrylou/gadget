@@ -121,6 +121,42 @@ jobs:
 
           print("✅ No PATCH-CHECK markers found.")
           PY
+      - name: Block risky JS patterns in archive-pomodoro_work.html
+        run: |
+          set -euo pipefail
+          f="pomodoro/archive-pomodoro_work.html"
+
+          echo "== Pattern scan: ${f} =="
+
+          # 1) monkey patch（window.app.xxx = ...）禁止
+          if grep -nE '^\s*window\.app\.[A-Za-z0-9_]+\s*=' "$f"; then
+            echo "::error::monkey patch (window.app.*=) is not allowed"
+            exit 1
+          fi
+
+          # 2) map 内で innerHTML 代入を禁止
+          if awk '
+            /map\s*\(/ { inmap=1 }
+            inmap && /innerHTML[[:space:]]*=/ { print "map+innerHTML:", NR, $0; bad=1 }
+            inmap && /\)\s*\.join\s*\(/ { inmap=0 }
+            END { exit bad?0:1 }
+          ' "$f"; then
+            echo "::error::innerHTML assignment inside map() is not allowed"
+            exit 1
+          fi
+
+          # 3) map 内で sort() を禁止
+          if awk '
+            /map\s*\(/ { inmap=1 }
+            inmap && /sort\s*\(/ { print "map+sort:", NR, $0; bad=1 }
+            inmap && /\)\s*\.join\s*\(/ { inmap=0 }
+            END { exit bad?0:1 }
+          ' "$f"; then
+            echo "::error::sort() inside map() is not allowed"
+            exit 1
+          fi
+
+          echo "✅ No risky JS patterns found."
 
       - name: Block bidirectional/unicode control characters
         run: |
