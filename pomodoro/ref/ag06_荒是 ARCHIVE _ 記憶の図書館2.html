@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<!-- saved from url=(0040)file:///C:/Workspace/mockups/index.html# -->
+<html lang="ja"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>荒是 ARCHIVE | 記憶の図書館</title>
+    <link rel="stylesheet" href="./ag06_荒是 ARCHIVE _ 記憶の図書館2_files/archive.css">
+</head>
+
+<body>
+
+    <div class="archive-container">
+
+        <!-- Header -->
+        <header class="archive-header">
+            <div>
+                <h1 class="archive-title">GLORIOUS ARCHIVE</h1>
+                <p style="margin: 0; font-size: 0.9rem; letter-spacing: 0.1em;">THE CHRONICLES OF KOREMA &amp; ARAMA</p>
+            </div>
+            <div class="archive-meta">
+                SYSTEM: ONLINE<br>
+                ERA: JUVENILE SF<br>
+                ACCESS: GRANTED
+            </div>
+        </header>
+
+        <!-- Intro Section -->
+        <section class="archive-section" id="intro">
+            <span class="section-label">FILE: 00-INTRO</span>
+            <div class="intro-text">
+                <p>ここは「是馬・荒馬シリーズ」の記憶が保管されたアーカイブ。</p>
+                <p>隠れた巨匠・加納一朗氏が描いた、痛快かつ奇想天外なSFジュブナイルの世界。小学生時代、図書館の隅で異世界への扉を開いてくれたあの興奮は、いまも色褪せることはありません。</p>
+                <p>絶版となり時の彼方に消えつつあるこの物語を、未来へ語り継ぐために。</p>
+            </div>
+        </section>
+
+        <!-- Characters Section -->
+        <section class="archive-section" id="characters">
+            <span class="section-label">FILE: 01-SUBJECTS</span>
+            <div class="char-grid">
+                <!-- Korema -->
+                <div class="char-card">
+                    <img src="./ag06_荒是 ARCHIVE _ 記憶の図書館2_files/korema_18.png" class="char-thumb" alt="Korema">
+                    <div class="char-info">
+                        <h3>青井 是馬</h3>
+                        <p>大食いで胃から脳波が出る異常体質の兄。</p>
+                    </div>
+                </div>
+                <!-- Arama -->
+                <div class="char-card">
+                    <img src="./ag06_荒是 ARCHIVE _ 記憶の図書館2_files/arama_13.png" class="char-thumb" alt="Arama">
+                    <div class="char-info">
+                        <h3>青井 荒馬</h3>
+                        <p>要領が良く、兄と瓜二つの容姿を持つ弟。</p>
+                    </div>
+                </div>
+                <!-- Nanten -->
+                <div class="char-card">
+                    <img src="./ag06_荒是 ARCHIVE _ 記憶の図書館2_files/nanten_05.png" class="char-thumb" alt="Dr. Nanten">
+                    <div class="char-info">
+                        <h3>北川 南天</h3>
+                        <p>稀代のマッドサイエンティストにしてトラブルメーカー。</p>
+                    </div>
+                </div>
+                <!-- Hiromi -->
+                <div class="char-card">
+                    <img src="./ag06_荒是 ARCHIVE _ 記憶の図書館2_files/hiromi_18.png" class="char-thumb" alt="Hiromi">
+                    <div class="char-info">
+                        <h3>北川 ひろみ</h3>
+                        <p>博士の娘にして、本シリーズのヒロイン。</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Book Database Section -->
+        <section class="archive-section" id="database">
+            <span class="section-label">FILE: 02-DATABASE</span>
+
+            <!-- Control Panel -->
+            <div class="control-panel">
+                <div class="panel-row">
+                    <!-- Year Slider -->
+                    <div class="time-machine">
+                        <label class="tm-label" id="year-display">TIMELINE: 1975 - 1988</label>
+                        <input type="range" id="year-slider" min="1975" max="1990" value="1990" step="1">
+                        <div style="display: flex; justify-content: space-between; font-size: 0.6rem; margin-top: 5px;">
+                            <span>1975</span>
+                            <span>1980</span>
+                            <span>1985</span>
+                            <span>1990</span>
+                        </div>
+                    </div>
+
+                    <!-- Tag Cloud -->
+                    <div class="tag-cloud">
+                        <button class="tag-filter" data-tag="ALL">ALL DATA</button>
+                        <button class="tag-filter active" data-tag="SCIFI">Sci-Fi</button>
+                        <button class="tag-filter" data-tag="MYSTERY">Mystery</button>
+                        <button class="tag-filter" data-tag="INVENTION">Invention</button>
+                        <button class="tag-filter" data-tag="FOOD">Food</button>
+                        <button class="tag-filter" data-tag="MONSTER">Monster</button>
+                    </div>
+
+                    <button class="reset-btn" id="reset-filters">RESET</button>
+                </div>
+            </div>
+
+            <!-- Book Grid -->
+            <div class="archive-grid" id="book-grid">
+                <!-- Case 01 -->
+                <div class="archive-card hidden" data-year="1976" data-tags="ACTION,MYSTERY,ISLAND" style="opacity: 0; display: none;">
+                    <div class="card-year">1976</div>
+                    <div class="card-img-container"><img src="./ag06_荒是 ARCHIVE _ 記憶の図書館2_files/01.jpg" class="card-img" alt="Cover">
+                    </div>
+                    <h3 class="card-title">イチコロ島SOS</h3>
+                    <div class="card-tags">TAGS: ACTION, MYSTERY</div>
+                </div>
+                <!-- Case 02 -->
+                <div class="archive-card" data-year="1977" data-tags="SCIFI,INVENTION,MYSTERY,TIME-TRAVEL" style="display: block; opacity: 1;">
+                    <div class="card-year">1977</div>
+                    <div class="card-img-container"><img src="./ag06_荒是 ARCHIVE _ 記憶の図書館2_files/02.jpg" class="card-img" alt="Cover">
+                    </div>
+                    <h3 class="card-title">タイムマシン殺人事件</h3>
+                    <div class="card-tags">TAGS: INVENTION, TIME-TRAVEL</div>
+                </div>
+                <!-- Case 03 -->
+                <div class="archive-card hidden" data-year="1977" data-tags="MONSTER,MYSTERY,CAMP" style="opacity: 0; display: none;">
+                    <div class="card-year">1977</div>
+                    <div class="card-img-container"><img src="./ag06_荒是 ARCHIVE _ 記憶の図書館2_files/03.jpg" class="card-img" alt="Cover">
+                    </div>
+                    <h3 class="card-title">死体がゆっくりやってくる</h3>
+                    <div class="card-tags">TAGS: MONSTER, MYSTERY</div>
+                </div>
+                <!-- Case 04 -->
+                <div class="archive-card" data-year="1978" data-tags="INVENTION,SCIFI,MYSTERY,ALIENS" style="display: block; opacity: 1;">
+                    <div class="card-year">1978</div>
+                    <div class="card-img-container"><img src="./ag06_荒是 ARCHIVE _ 記憶の図書館2_files/04.jpg" class="card-img" alt="Cover">
+                    </div>
+                    <h3 class="card-title">天国探偵局</h3>
+                    <div class="card-tags">TAGS: INVENTION, MYSTERY</div>
+                </div>
+                <!-- Case 05 -->
+                <div class="archive-card hidden" data-year="1978" data-tags="INVENTION,ACTION,INVISIBLE-MAN" style="opacity: 0; display: none;">
+                    <div class="card-year">1978</div>
+                    <div class="card-img-container"><img src="./ag06_荒是 ARCHIVE _ 記憶の図書館2_files/05.jpg" class="card-img" alt="Cover">
+                    </div>
+                    <h3 class="card-title">半透明人間の逆襲</h3>
+                    <div class="card-tags">TAGS: INVENTION, ACTION</div>
+                </div>
+                <!-- Case 06 -->
+                <div class="archive-card hidden" data-year="1978" data-tags="MYSTERY,FOOD,SCHOOL" style="opacity: 0; display: none;">
+                    <div class="card-year">1978</div>
+                    <div class="card-img-container"><img src="./ag06_荒是 ARCHIVE _ 記憶の図書館2_files/06.jpg" class="card-img" alt="Cover">
+                    </div>
+                    <h3 class="card-title">ピーマン特攻指令</h3>
+                    <div class="card-tags">TAGS: MYSTERY, FOOD</div>
+                </div>
+                <!-- Case 07 -->
+                <div class="archive-card" data-year="1979" data-tags="SCIFI,INVENTION,MONSTER" style="display: block; opacity: 1;">
+                    <div class="card-year">1979</div>
+                    <div class="card-img-container"><img src="./ag06_荒是 ARCHIVE _ 記憶の図書館2_files/07.jpg" class="card-img" alt="Cover">
+                    </div>
+                    <h3 class="card-title">人工生命体ドンドン</h3>
+                    <div class="card-tags">TAGS: SCIFI, MONSTER</div>
+                </div>
+                <!-- Case 08 -->
+                <div class="archive-card hidden" data-year="1979" data-tags="MONSTER,ACTION" style="opacity: 0; display: none;">
+                    <div class="card-year">1979</div>
+                    <div class="card-img-container"><img src="./ag06_荒是 ARCHIVE _ 記憶の図書館2_files/08.jpg" class="card-img" alt="Cover">
+                    </div>
+                    <h3 class="card-title">猿人対地球人</h3>
+                    <div class="card-tags">TAGS: MONSTER, ACTION</div>
+                </div>
+                <!-- Case 09 -->
+                <div class="archive-card" data-year="1980" data-tags="SCIFI,MYSTERY" style="display: block; opacity: 1;">
+                    <div class="card-year">1980</div>
+                    <div class="card-img-container"><img src="./ag06_荒是 ARCHIVE _ 記憶の図書館2_files/09.jpg" class="card-img" alt="Cover">
+                    </div>
+                    <h3 class="card-title">冷凍人間アイスマン</h3>
+                    <div class="card-tags">TAGS: SCIFI, MYSTERY</div>
+                </div>
+                <!-- Case 10 -->
+                <div class="archive-card" data-year="1980" data-tags="SCIFI,INVENTION,TIME-TRAVEL" style="display: block; opacity: 1;">
+                    <div class="card-year">1980</div>
+                    <div class="card-img-container"><img src="./ag06_荒是 ARCHIVE _ 記憶の図書館2_files/10.jpg" class="card-img" alt="Cover">
+                    </div>
+                    <h3 class="card-title">凸凹タイム・ライダー</h3>
+                    <div class="card-tags">TAGS: TIME-TRAVEL, SCIFI</div>
+                </div>
+                <!-- Case 11 -->
+                <div class="archive-card hidden" data-year="1981" data-tags="INVENTION,ACTION,SPY" style="opacity: 0; display: none;">
+                    <div class="card-year">1981</div>
+                    <div class="card-img-container"><img src="./ag06_荒是 ARCHIVE _ 記憶の図書館2_files/11.jpg" class="card-img" alt="Cover">
+                    </div>
+                    <h3 class="card-title">うなぎマント作戦</h3>
+                    <div class="card-tags">TAGS: INVENTION, ACTION</div>
+                </div>
+                <!-- Case 12 -->
+                <div class="archive-card" data-year="1981" data-tags="INVENTION,SCIFI,DREAM" style="display: block; opacity: 1;">
+                    <div class="card-year">1981</div>
+                    <div class="card-img-container"><img src="./ag06_荒是 ARCHIVE _ 記憶の図書館2_files/12.jpg" class="card-img" alt="Cover">
+                    </div>
+                    <h3 class="card-title">ショック! 夢見る機械</h3>
+                    <div class="card-tags">TAGS: INVENTION, SCIFI</div>
+                </div>
+                <!-- Case 13 -->
+                <div class="archive-card hidden" data-year="1982" data-tags="MYSTERY,MONSTER,GHOST" style="opacity: 0; display: none;">
+                    <div class="card-year">1982</div>
+                    <div class="card-img-container"><img src="./ag06_荒是 ARCHIVE _ 記憶の図書館2_files/13.jpg" class="card-img" alt="Cover">
+                    </div>
+                    <h3 class="card-title">悪霊先生</h3>
+                    <div class="card-tags">TAGS: MYSTERY, MONSTER</div>
+                </div>
+                <!-- Case 14 -->
+                <div class="archive-card" data-year="1982" data-tags="INVENTION,SCIFI,COPY" style="display: block; opacity: 1;">
+                    <div class="card-year">1982</div>
+                    <div class="card-img-container"><img src="./ag06_荒是 ARCHIVE _ 記憶の図書館2_files/14.jpg" class="card-img" alt="Cover">
+                    </div>
+                    <h3 class="card-title">コピー人間の復讐</h3>
+                    <div class="card-tags">TAGS: INVENTION, SCIFI</div>
+                </div>
+                <!-- Case 15 -->
+                <div class="archive-card" data-year="1983" data-tags="MONSTER,SCIFI,DINOSAUR" style="display: block; opacity: 1;">
+                    <div class="card-year">1983</div>
+                    <div class="card-img-container"><img src="./ag06_荒是 ARCHIVE _ 記憶の図書館2_files/15.jpg" class="card-img" alt="Cover">
+                    </div>
+                    <h3 class="card-title">原始怪獣グララ</h3>
+                    <div class="card-tags">TAGS: MONSTER, SCIFI</div>
+                </div>
+                <!-- Case 16 -->
+                <div class="archive-card" data-year="1984" data-tags="SCIFI,MYSTERY,FOOD,DIMENSION" style="display: block; opacity: 1;">
+                    <div class="card-year">1984</div>
+                    <div class="card-img-container"><img src="./ag06_荒是 ARCHIVE _ 記憶の図書館2_files/16.jpg" class="card-img" alt="Cover">
+                    </div>
+                    <h3 class="card-title">一九八五年、異次元への旅</h3>
+                    <div class="card-tags">TAGS: SCIFI, FOOD</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Authors Section -->
+        <section class="archive-section" id="authors">
+            <span class="section-label">FILE: 03-CREATORS</span>
+            <div style="display: flex; gap: 40px; flex-wrap: wrap;">
+                <div style="flex: 1; min-width: 300px;">
+                    <h3>加納 一朗 (Author)</h3>
+                    <p>ユーモラスな文体と奇想天外なトリックで、読者を魅了した児童文学作家。代表作に「是馬・荒馬シリーズ」「ホラ男爵の冒険」など。</p>
+                </div>
+                <div style="flex: 1; min-width: 300px;">
+                    <h3>祐天寺 三郎 (Illustrator)</h3>
+                    <p>ダイナミックな構図と独特のタッチで、シリーズの世界観を決定づけたイラストレーター。</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Vote Section -->
+        <section class="vote-section" id="vote">
+            <span class="section-label">FILE: 99-FEEDBACK</span>
+            <div>
+                <h2 style="margin-bottom: 30px;">DO YOU WANT SEQUEL?</h2>
+                <button class="vote-btn-big">VOTE FOR REPRINT</button>
+            </div>
+        </section>
+
+        <footer style="text-align: center; color: var(--text-faded); padding: 40px 0; font-size: 0.8rem;">
+            © 1975-2024 FAN ARCHIVE PROJECT.
+        </footer>
+
+    </div>
+
+    <!-- Script -->
+    <script src="./ag06_荒是 ARCHIVE _ 記憶の図書館2_files/archive.js"></script>
+
+
+</body></html>

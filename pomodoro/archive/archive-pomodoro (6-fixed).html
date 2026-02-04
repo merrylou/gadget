@@ -1,0 +1,2303 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ARCHIVE: POMODORO</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+  /* --- Base theme (from archive.css) --- */
+/* Iteration 6: Dark Digital Archive (Chic & Future) */
+
+:root {
+    /* Theme Colors - Dark Mode */
+    --bg-dark: #050a10;
+    /* Deep Navy/Black */
+    --bg-panel: #0f1620;
+    /* Slightly lighter panel */
+
+    --text-main: #e0f0ff;
+    /* Pale blue-white */
+    --text-muted: #647a96;
+
+    /* Hologram Layer */
+    --holo-cyan: #00f0ff;
+    --holo-glow: rgba(0, 240, 255, 0.4);
+    --holo-border: rgba(0, 240, 255, 0.3);
+
+    /* Fonts */
+    --font-tech: "Segoe UI", "Roboto", sans-serif;
+    --font-mono: "Courier New", monospace;
+    /* Keep mono for data feel */
+}
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    background-color: var(--bg-dark);
+
+    /* Technical Grid Texture */
+    background-image:
+        linear-gradient(rgba(0, 240, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 240, 255, 0.03) 1px, transparent 1px);
+    background-size: 30px 30px;
+
+    color: var(--text-main);
+    font-family: var(--font-tech);
+    overflow-x: hidden;
+}
+
+/* Vignette Overlay */
+body::after {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: radial-gradient(circle at 50% 50%, transparent 60%, #000 100%);
+    pointer-events: none;
+    z-index: -1;
+}
+
+a {
+    text-decoration: none;
+    color: inherit;
+}
+
+/* Layout */
+.archive-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 60px 20px;
+}
+
+/* Header */
+.archive-header {
+    border-bottom: 1px solid var(--holo-border);
+    padding-bottom: 20px;
+    margin-bottom: 60px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    position: relative;
+}
+
+.archive-header::after {
+    content: "";
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    width: 100px;
+    height: 3px;
+    background: var(--holo-cyan);
+    box-shadow: 0 0 10px var(--holo-cyan);
+}
+
+.archive-title {
+    font-size: 3rem;
+    letter-spacing: 0.1em;
+    margin: 0;
+    font-weight: 200;
+    text-transform: uppercase;
+    text-shadow: 0 0 10px rgba(0, 240, 255, 0.3);
+}
+
+.archive-meta {
+    color: var(--holo-cyan);
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    text-align: right;
+    line-height: 1.5;
+    border-left: 1px solid var(--holo-border);
+    padding-left: 15px;
+}
+
+/* Sections */
+.archive-section {
+    margin-bottom: 80px;
+    /* border-top: 1px solid rgba(255,255,255,0.05); */
+    padding-top: 20px;
+}
+
+.section-label {
+    font-family: var(--font-mono);
+    color: var(--bg-dark);
+    background: var(--holo-cyan);
+    display: inline-block;
+    padding: 4px 12px;
+    font-size: 0.8rem;
+    letter-spacing: 2px;
+    margin-bottom: 30px;
+    font-weight: bold;
+}
+
+/* Intro Text */
+.intro-text {
+    max-width: 800px;
+    font-size: 1.1rem;
+    line-height: 2;
+    color: var(--text-muted);
+    border-left: 2px solid var(--holo-border);
+    padding-left: 20px;
+}
+
+.intro-text p {
+    margin-bottom: 1.5rem;
+}
+
+/* Character Cards */
+.char-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.char-card {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    background: rgba(255, 255, 255, 0.02);
+    padding: 20px;
+    border: 1px solid var(--holo-border);
+    border-radius: 4px;
+    transition: all 0.3s;
+    position: relative;
+    overflow: hidden;
+}
+
+.char-card::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: var(--holo-cyan);
+    transform: scaleY(0);
+    transition: transform 0.3s;
+}
+
+.char-card:hover {
+    background: rgba(0, 240, 255, 0.05);
+    box-shadow: 0 0 20px rgba(0, 240, 255, 0.1);
+}
+
+.char-card:hover::before {
+    transform: scaleY(1);
+}
+
+.char-thumb {
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    object-fit: cover;
+    filter: grayscale(100%);
+    border: 2px solid var(--text-muted);
+    transition: all 0.3s;
+}
+
+.char-card:hover .char-thumb {
+    filter: grayscale(0%);
+    border-color: var(--holo-cyan);
+    box-shadow: 0 0 10px var(--holo-cyan);
+}
+
+.char-info h3 {
+    margin: 0 0 5px 0;
+    font-size: 1.1rem;
+    color: var(--text-main);
+}
+
+.char-info p {
+    margin: 0;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+}
+
+/* Controls */
+.control-panel {
+    background: rgba(15, 22, 32, 0.8);
+    border: 1px solid var(--holo-border);
+    padding: 30px;
+    border-radius: 8px;
+    margin-bottom: 50px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    position: sticky;
+    top: 20px;
+    z-index: 100;
+    backdrop-filter: blur(10px);
+}
+
+.control-panel::before {
+    content: "SEARCH PARAMETERS";
+    position: absolute;
+    top: -10px;
+    left: 20px;
+    background: var(--bg-dark);
+    color: var(--holo-cyan);
+    font-size: 0.7rem;
+    padding: 0 10px;
+    border: 1px solid var(--holo-border);
+}
+
+.panel-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 30px;
+    width: 100%;
+}
+
+/* Time Machine Slider */
+.time-machine {
+    flex: 1;
+    min-width: 300px;
+}
+
+.tm-label {
+    font-family: var(--font-mono);
+    font-size: 0.9rem;
+    color: var(--holo-cyan);
+    margin-bottom: 15px;
+    display: block;
+}
+
+input[type=range] {
+    width: 100%;
+    -webkit-appearance: none;
+    background: transparent;
+}
+
+input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    height: 16px;
+    width: 16px;
+    border-radius: 50%;
+    background: var(--bg-dark);
+    border: 2px solid var(--holo-cyan);
+    cursor: pointer;
+    box-shadow: 0 0 15px var(--holo-cyan);
+    margin-top: -6px;
+}
+
+input[type=range]::-webkit-slider-runnable-track {
+    width: 100%;
+    height: 4px;
+    background: #333;
+    border-radius: 2px;
+}
+
+/* Tags */
+.tag-cloud {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.tag-filter {
+    background: transparent;
+    border: 1px solid var(--text-muted);
+    color: var(--text-muted);
+    padding: 6px 16px;
+    cursor: pointer;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    transition: all 0.3s;
+    letter-spacing: 1px;
+}
+
+.tag-filter:hover,
+.tag-filter.active {
+    border-color: var(--holo-cyan);
+    color: var(--holo-cyan);
+    background: rgba(0, 240, 255, 0.1);
+    box-shadow: 0 0 15px rgba(0, 240, 255, 0.2);
+}
+
+/* Reset Btn */
+.reset-btn {
+    background: #222;
+    color: #fff;
+    border: 1px solid #444;
+    padding: 6px 12px;
+    cursor: pointer;
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    transition: all 0.3s;
+}
+
+.reset-btn:hover {
+    border-color: #fff;
+}
+
+/* Grid */
+.archive-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 40px;
+}
+
+/* Card */
+.archive-card {
+    background: var(--bg-panel);
+    border: 1px solid transparent;
+    /* No border initially */
+    padding: 0;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+    transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+.archive-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+    border-color: var(--holo-border);
+    /* Glow border on hover */
+}
+
+.card-year {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    font-size: 0.7rem;
+    font-family: var(--font-mono);
+    color: var(--bg-dark);
+    background: var(--holo-cyan);
+    padding: 2px 6px;
+    z-index: 10;
+    font-weight: bold;
+}
+
+.card-img-container {
+    width: 100%;
+    aspect-ratio: 2/3;
+    background: #000;
+    overflow: hidden;
+    position: relative;
+    /* Dark Mode: Dim + Desaturate */
+    filter: grayscale(100%) brightness(0.6);
+    transition: all 0.5s ease;
+}
+
+.archive-card:hover .card-img-container {
+    /* Restore */
+    filter: grayscale(0%) brightness(1.1);
+}
+
+.card-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Title & Info area */
+.card-info-area {
+    padding: 20px;
+    border-top: 1px solid #222;
+    background: linear-gradient(to bottom, var(--bg-panel), #0a0e14);
+}
+
+.card-title {
+    font-size: 1rem;
+    font-weight: 500;
+    margin: 0 0 10px 0;
+    line-height: 1.4;
+    color: var(--text-main);
+    min-height: 2.8em;
+    /* Align lines */
+}
+
+.card-tags {
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+}
+
+/* Vote Section */
+.vote-section {
+    text-align: center;
+    padding: 80px 0;
+    margin-top: 80px;
+    border-top: 1px solid var(--holo-border);
+    position: relative;
+    overflow: hidden;
+}
+
+.vote-section::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, var(--holo-glow) 0%, transparent 70%);
+    z-index: 0;
+    opacity: 0.1;
+}
+
+.vote-btn-big {
+    position: relative;
+    z-index: 1;
+    background: transparent;
+    color: var(--holo-cyan);
+    font-size: 1.5rem;
+    font-family: var(--font-mono);
+    padding: 1.5rem 4rem;
+    border: 1px solid var(--holo-cyan);
+    cursor: pointer;
+    transition: all 0.3s;
+    text-transform: uppercase;
+    letter-spacing: 4px;
+}
+
+.vote-btn-big:hover {
+    background: var(--holo-cyan);
+    color: var(--bg-dark);
+    box-shadow: 0 0 50px var(--holo-cyan);
+    font-weight: bold;
+}
+
+/* Animation Classes */
+.hidden {
+    display: none;
+}
+
+  /* --- App-specific additions / overrides --- */
+  :root {
+    --panel-radius: 14px;
+    --line-soft: rgba(0, 240, 255, 0.12);
+    --line-mid: rgba(0, 240, 255, 0.22);
+    --shadow-holo: 0 0 24px rgba(0, 240, 255, 0.10);
+  }
+
+  body {
+    min-height: 100vh;
+  }
+
+  .archive-container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 22px 16px 56px;
+  }
+
+  .header {
+    display: flex;
+    gap: 14px;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 16px;
+  }
+  .brand {
+    display:flex;
+    flex-direction:column;
+    gap: 6px;
+  }
+  .brand h1 {
+    margin: 0;
+    font-family: var(--font-tech);
+    letter-spacing: 0.08em;
+    font-weight: 700;
+    font-size: 22px;
+    color: var(--text-main);
+    text-transform: uppercase;
+  }
+  .brand .sub {
+    font-family: var(--font-mono);
+    color: var(--text-muted);
+    font-size: 12px;
+    letter-spacing: 0.05em;
+  }
+  .status {
+    display:flex;
+    gap: 10px;
+    align-items:center;
+    padding: 10px 12px;
+    border-radius: 999px;
+    border: 1px solid var(--holo-border);
+    background: linear-gradient(180deg, rgba(0,240,255,0.07), rgba(0,240,255,0.02));
+    box-shadow: var(--shadow-holo);
+    font-family: var(--font-mono);
+    color: var(--text-main);
+    font-size: 12px;
+    white-space: nowrap;
+  }
+  .status .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--holo-cyan);
+    box-shadow: 0 0 10px var(--holo-glow);
+  }
+
+  .archive-section {
+    margin-top: 16px;
+    background: linear-gradient(180deg, rgba(0,240,255,0.05), rgba(0,240,255,0.01));
+    border: 1px solid var(--holo-border);
+    border-radius: var(--panel-radius);
+    overflow: hidden;
+    box-shadow: var(--shadow-holo);
+  }
+  .section-head {
+    display:flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--line-soft);
+    background: rgba(5,10,16,0.65);
+  }
+  .section-label {
+    font-family: var(--font-mono);
+    color: var(--text-muted);
+    letter-spacing: 0.12em;
+    font-size: 12px;
+    text-transform: uppercase;
+  }
+  .section-body {
+    padding: 14px;
+  }
+
+  /* Timer UI */
+  .timer-grid {
+    display:grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 14px;
+    align-items: center;
+  }
+  @media (max-width: 860px) {
+    .timer-grid { grid-template-columns: 1fr; }
+  }
+  .chrono {
+    display:flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .phase {
+    font-family: var(--font-mono);
+    letter-spacing: 0.12em;
+    font-size: 12px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+  }
+  .time {
+    font-family: var(--font-mono);
+    font-size: 52px;
+    letter-spacing: 0.08em;
+    color: var(--text-main);
+    text-shadow: 0 0 18px rgba(0,240,255,0.12);
+  }
+  .focusline {
+    display:flex;
+    gap: 10px;
+    align-items: center;
+    padding: 10px 12px;
+    border-radius: 12px;
+    border: 1px dashed var(--line-mid);
+    background: rgba(15,22,32,0.55);
+  }
+  .focusline .tag {
+    font-family: var(--font-mono);
+    color: var(--text-muted);
+    font-size: 12px;
+    letter-spacing: 0.1em;
+  }
+  .focusline .focus-title {
+    flex: 1;
+    font-family: var(--font-tech);
+    color: var(--text-main);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .focusline .empty {
+    color: var(--text-muted);
+  }
+
+  .controls {
+    display:flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 4px;
+  }
+  .btn {
+    cursor: pointer;
+    border: 1px solid var(--holo-border);
+    background: rgba(0,240,255,0.06);
+    color: var(--text-main);
+    border-radius: 12px;
+    padding: 10px 12px;
+    font-family: var(--font-mono);
+    letter-spacing: 0.08em;
+    font-size: 12px;
+    transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+    display:inline-flex;
+    gap: 8px;
+    align-items: center;
+    user-select: none;
+  }
+  .btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 0 16px rgba(0,240,255,0.12);
+    background: rgba(0,240,255,0.10);
+  }
+  .btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+  .btn-primary {
+    background: rgba(0,240,255,0.12);
+    border-color: rgba(0,240,255,0.35);
+  }
+  .btn-danger {
+    background: rgba(255, 70, 70, 0.08);
+    border-color: rgba(255, 70, 70, 0.22);
+  }
+  .btn-ghost {
+    background: rgba(255,255,255,0.03);
+  }
+
+  .viz {
+    display:flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: center;
+  }
+  .ring {
+    width: 170px;
+    height: 170px;
+    border-radius: 50%;
+    background:
+      conic-gradient(var(--holo-cyan) 0deg, rgba(0,240,255,0.15) 0deg);
+    display:grid;
+    place-items: center;
+    box-shadow: 0 0 30px rgba(0,240,255,0.10);
+    border: 1px solid var(--line-mid);
+  }
+  .ring .inner {
+    width: 128px;
+    height: 128px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, rgba(0,240,255,0.08), rgba(5,10,16,0.92));
+    border: 1px solid var(--line-soft);
+    display:flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-mono);
+    color: var(--text-muted);
+    letter-spacing: 0.12em;
+    font-size: 12px;
+    text-transform: uppercase;
+  }
+  .bar {
+    width: 100%;
+    height: 10px;
+    border-radius: 999px;
+    border: 1px solid var(--line-soft);
+    background: rgba(255,255,255,0.04);
+    overflow:hidden;
+  }
+  .bar > div {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, rgba(0,240,255,0.35), rgba(0,240,255,0.12));
+  }
+
+  /* Subjects (cards) */
+  .toolbar {
+    display:flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .toolbar .left, .toolbar .right {
+    display:flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .hint {
+    font-family: var(--font-mono);
+    color: var(--text-muted);
+    font-size: 12px;
+    letter-spacing: 0.06em;
+  }
+
+  .grid {
+    display:grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+  @media (max-width: 860px) {
+    .grid { grid-template-columns: 1fr; }
+  }
+  .card {
+    border-radius: 14px;
+    border: 1px solid var(--line-soft);
+    background: rgba(15,22,32,0.55);
+    padding: 12px;
+    display:flex;
+    gap: 12px;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease;
+  }
+  .card::after {
+    content:"";
+    position:absolute;
+    inset: -40%;
+    background: radial-gradient(circle, rgba(0,240,255,0.10), transparent 55%);
+    transform: translate(30%, -10%);
+    pointer-events: none;
+  }
+  .card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0 18px rgba(0,240,255,0.12);
+    border-color: rgba(0,240,255,0.28);
+  }
+  .card.focus {
+    border-color: rgba(0,240,255,0.50);
+    box-shadow: 0 0 22px rgba(0,240,255,0.18);
+  }
+  .thumb {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    border: 1px solid var(--line-soft);
+    display:grid;
+    place-items:center;
+    color: var(--holo-cyan);
+    background: rgba(0,240,255,0.06);
+    flex: 0 0 auto;
+  }
+  .meta {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  .title {
+    font-family: var(--font-tech);
+    color: var(--text-main);
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    margin-bottom: 6px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .small {
+    font-family: var(--font-mono);
+    color: var(--text-muted);
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    display:flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .badge {
+    border: 1px solid var(--line-soft);
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: rgba(0,240,255,0.04);
+  }
+  .actions {
+    display:flex;
+    gap: 8px;
+    align-items: center;
+    flex: 0 0 auto;
+    z-index: 1;
+  }
+  .iconbtn {
+    border: 1px solid var(--line-soft);
+    background: rgba(255,255,255,0.03);
+    color: var(--text-main);
+    border-radius: 10px;
+    padding: 8px 10px;
+    cursor: pointer;
+  }
+  .iconbtn:hover {
+    border-color: rgba(0,240,255,0.28);
+    box-shadow: 0 0 12px rgba(0,240,255,0.10);
+  }
+  .iconbtn.danger {
+    border-color: rgba(255, 70, 70, 0.18);
+  }
+  .iconbtn.danger:hover {
+    border-color: rgba(255, 70, 70, 0.28);
+    box-shadow: 0 0 12px rgba(255, 70, 70, 0.10);
+  }
+
+  /* Database section */
+  .tabs {
+    display:flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .tab {
+    padding: 8px 10px;
+    border-radius: 999px;
+    border: 1px solid var(--line-soft);
+    background: rgba(255,255,255,0.03);
+    font-family: var(--font-mono);
+    color: var(--text-muted);
+    letter-spacing: 0.08em;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .tab.active {
+    color: var(--text-main);
+    border-color: rgba(0,240,255,0.35);
+    background: rgba(0,240,255,0.08);
+  }
+
+  .filterrow {
+    display:flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin: 10px 0 12px;
+    align-items:center;
+  }
+  select, input[type="date"], input[type="number"], input[type="text"], textarea {
+    font-family: var(--font-mono);
+    color: var(--text-main);
+    background: rgba(5,10,16,0.72);
+    border: 1px solid var(--line-soft);
+    border-radius: 10px;
+    padding: 10px 12px;
+    outline: none;
+  }
+  textarea { min-height: 90px; resize: vertical; }
+
+  .list {
+    display:flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .rowcard {
+    border: 1px solid var(--line-soft);
+    border-radius: 14px;
+    padding: 12px;
+    background: rgba(15,22,32,0.55);
+    display:flex;
+    justify-content: space-between;
+    gap: 10px;
+    align-items: center;
+    cursor: pointer;
+  }
+  .rowcard:hover {
+    border-color: rgba(0,240,255,0.28);
+    box-shadow: 0 0 14px rgba(0,240,255,0.10);
+  }
+  .rowcard .left {
+    min-width: 0;
+  }
+  .rowcard .t {
+    font-family: var(--font-tech);
+    color: var(--text-main);
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    overflow:hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .rowcard .m {
+    margin-top: 6px;
+    font-family: var(--font-mono);
+    color: var(--text-muted);
+    font-size: 12px;
+    display:flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  /* Modal */
+  .modal {
+    position: fixed;
+    inset: 0;
+    display:none;
+    place-items: center;
+    background: rgba(0,0,0,0.55);
+    padding: 16px;
+    z-index: 50;
+  }
+  .modal.active { display:grid; }
+  .modalpanel {
+    width: min(720px, 100%);
+    border-radius: 16px;
+    border: 1px solid rgba(0,240,255,0.30);
+    background: radial-gradient(circle at 30% 20%, rgba(0,240,255,0.10), rgba(5,10,16,0.94));
+    box-shadow: 0 0 30px rgba(0,240,255,0.14);
+    overflow:hidden;
+  }
+  .modalhead {
+    display:flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .modalhead .ttl {
+    font-family: var(--font-mono);
+    color: var(--text-muted);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    font-size: 12px;
+  }
+  .modalbody {
+    padding: 14px;
+  }
+  .formgrid {
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  @media (max-width: 720px) {
+    .formgrid { grid-template-columns: 1fr; }
+  }
+  .field label {
+    display:block;
+    font-family: var(--font-mono);
+    color: var(--text-muted);
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    margin-bottom: 6px;
+  }
+  .field .subnote {
+    margin-top: 6px;
+    font-family: var(--font-mono);
+    color: var(--text-muted);
+    font-size: 12px;
+  }
+  .modalfoot {
+    display:flex;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 12px 14px;
+    border-top: 1px solid var(--line-soft);
+    background: rgba(15,22,32,0.35);
+  }
+  .modalfoot .left, .modalfoot .right {
+    display:flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items:center;
+  }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    right: 14px;
+    bottom: 14px;
+    border: 1px solid var(--line-soft);
+    background: rgba(5,10,16,0.85);
+    color: var(--text-main);
+    padding: 10px 12px;
+    border-radius: 12px;
+    font-family: var(--font-mono);
+    letter-spacing: 0.06em;
+    font-size: 12px;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity 0.15s ease, transform 0.15s ease;
+    z-index: 80;
+    max-width: min(420px, calc(100% - 28px));
+  }
+  .toast.show {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  </style>
+</head>
+<body>
+  <div class="archive-container">
+    <div class="header">
+      <div class="brand">
+        <h1>ARCHIVE: POMODORO</h1>
+        <div class="sub">A local-only chronometer & subject registry. IndexedDB persistent. Hologram UI.</div>
+      </div>
+      <div class="status" id="sysStatus"><span class="dot"></span><span id="sysText">SYSTEM: ONLINE</span></div>
+    </div>
+
+    <!-- FILE: 00 -->
+    <section class="archive-section">
+      <div class="section-head">
+        <span class="section-label">FILE: 00-CHRONOMETER</span>
+        <div class="tabs" aria-label="phase">
+          <span class="phase" id="phaseLabel">WORK</span>
+        </div>
+      </div>
+      <div class="section-body">
+        <div class="timer-grid">
+          <div class="chrono">
+            <div class="time" id="timeText">25:00</div>
+            <div class="focusline">
+              <span class="tag">FOCUS:</span>
+              <span class="focus-title empty" id="focusTitle">— 未選択 —</span>
+            </div>
+            <div class="controls">
+              <button class="btn btn-primary" id="btnStart"><i class="fa-solid fa-play"></i>START</button>
+              <button class="btn" id="btnPause" disabled><i class="fa-solid fa-pause"></i>PAUSE</button>
+              <button class="btn" id="btnReset"><i class="fa-solid fa-rotate-left"></i>RESET</button>
+            </div>
+          </div>
+          <div class="viz">
+            <div class="ring" id="ring">
+              <div class="inner" id="ringText">PROGRESS</div>
+            </div>
+            <div class="bar"><div id="barFill"></div></div>
+            <div class="hint" id="phaseHint">WORK SESSION</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FILE: 01 -->
+    <section class="archive-section">
+      <div class="section-head">
+        <span class="section-label">FILE: 01-SUBJECTS</span>
+        <div class="tabs">
+          <button class="btn btn-primary" id="btnAdd"><i class="fa-solid fa-plus"></i>NEW SUBJECT</button>
+        </div>
+      </div>
+      <div class="section-body">
+        <div class="toolbar">
+          <div class="left">
+            <span class="hint">カードクリックでFOCUS選択 / 編集アイコンで編集</span>
+          </div>
+          <div class="right">
+            <span class="hint" id="counts">ACTIVE: 0 / ARCHIVED: 0</span>
+          </div>
+        </div>
+        <div class="grid" id="activeGrid"></div>
+      </div>
+    </section>
+
+    <!-- FILE: 02 -->
+    <section class="archive-section">
+      <div class="section-head">
+        <span class="section-label">FILE: 02-DATABASE</span>
+        <div class="tabs">
+          <button class="tab active" id="tabArchived">ARCHIVED TASKS</button>
+          <button class="tab" id="tabLogs">SESSION LOGS</button>
+        </div>
+      </div>
+      <div class="section-body">
+        <div class="filterrow">
+          <select id="filterCategory">
+            <option value="">CATEGORY: ALL</option>
+          </select>
+          <input id="filterFrom" type="date" />
+          <input id="filterTo" type="date" />
+          <span class="hint">※タスク/ログで共通フィルタ</span>
+        </div>
+
+        <div class="list" id="dbList"></div>
+      </div>
+    </section>
+
+    <!-- FILE: 99 -->
+    <section class="archive-section">
+      <div class="section-head">
+        <span class="section-label">FILE: 99-SYSTEM</span>
+        <div class="tabs"></div>
+      </div>
+      <div class="section-body">
+        <div class="formgrid">
+          <div class="field">
+            <label>WORK (min)</label>
+            <input type="number" id="cfgWork" min="1" max="180" value="25">
+          </div>
+          <div class="field">
+            <label>SHORT BREAK (min)</label>
+            <input type="number" id="cfgShort" min="1" max="60" value="5">
+          </div>
+          <div class="field">
+            <label>LONG BREAK (min)</label>
+            <input type="number" id="cfgLong" min="1" max="90" value="15">
+          </div>
+          <div class="field">
+            <label>NOTIFICATION</label>
+            <div class="controls">
+              <button class="btn" id="btnNotify"><i class="fa-regular fa-bell"></i>REQUEST</button>
+              <button class="btn" id="btnSaveCfg"><i class="fa-solid fa-floppy-disk"></i>SAVE</button>
+            </div>
+            <div class="subnote">※IndexedDB(settings) に保存</div>
+          </div>
+        </div>
+
+        <div style="height:12px"></div>
+
+        <div class="controls">
+          <button class="btn" id="btnExport"><i class="fa-solid fa-file-export"></i>EXPORT JSON</button>
+          <button class="btn btn-danger" id="btnClear"><i class="fa-solid fa-triangle-exclamation"></i>CLEAR ALL</button>
+        </div>
+        <div class="hint" style="margin-top:10px;">
+          Data stores: tasks / settings / logs (IndexedDB). No external DB.
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Modal -->
+  <div class="modal" id="taskModal" aria-hidden="true">
+    <div class="modalpanel">
+      <div class="modalhead">
+        <div class="ttl" id="modalTitle">SUBJECT</div>
+        <button class="iconbtn" id="btnClose" title="Close"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="modalbody">
+        <form id="taskForm">
+          <input type="hidden" id="taskId" value="">
+          <div class="formgrid">
+            <div class="field" style="grid-column: 1 / -1;">
+              <label>TITLE</label>
+              <input type="text" id="taskTitle" required maxlength="120" placeholder="例: 提案書レビュー / 記事執筆 / 読書">
+            </div>
+            <div class="field" style="grid-column: 1 / -1;">
+              <label>DESCRIPTION</label>
+              <textarea id="taskDesc" placeholder="概要 / メモ（任意）"></textarea>
+            </div>
+            <div class="field">
+              <label>CATEGORY</label>
+              <input type="text" id="taskCategory" list="categoryList" placeholder="例: WORK / STUDY / READ">
+              <datalist id="categoryList"></datalist>
+            </div>
+            <div class="field">
+              <label>PRIORITY</label>
+              <select id="taskPriority">
+                <option value="low">LOW</option>
+                <option value="medium" selected>MEDIUM</option>
+                <option value="high">HIGH</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>DUE DATE</label>
+              <input type="date" id="taskDueDate">
+              <div class="subnote" id="dueWeekday">WEEKDAY: —</div>
+            </div>
+            <div class="field">
+              <label>INFO</label>
+              <div class="subnote" id="taskInfo">—</div>
+            </div>
+          </div>
+          <button type="submit" style="display:none;"></button>
+        </form>
+      </div>
+      <div class="modalfoot">
+        <div class="left">
+          <button class="btn btn-ghost" id="btnUndo" style="display:none;"><i class="fa-solid fa-rotate-left"></i>UNDO</button>
+          <button class="btn btn-danger" id="btnDelete" style="display:none;"><i class="fa-solid fa-trash"></i>DELETE</button>
+        </div>
+        <div class="right">
+          <button class="btn" id="btnCancel"><i class="fa-regular fa-circle-xmark"></i>CANCEL</button>
+          <button class="btn btn-primary" id="btnSave"><i class="fa-solid fa-check"></i>SAVE</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+<script>
+(() => {
+  "use strict";
+
+  /**
+   * IMPORTANT:
+   * Some browsers restrict IndexedDB on file:// origins (opaque origin).
+   * To keep the app usable when opened directly as a file, we fall back to localStorage.
+   * Recommendation: if you want full IndexedDB behavior, open via a tiny local server (localhost).
+   */
+
+  const DB_NAME = "ArchivePomodoroDB";
+  const DB_VER = 2;
+
+  const PHASE = {
+    WORK: "WORK",
+    SHORT: "SHORT BREAK",
+    LONG: "LONG BREAK",
+  };
+
+  const ICONS = {
+    "work": "fa-briefcase",
+    "study": "fa-book",
+    "read": "fa-book-open",
+    "write": "fa-pen-nib",
+    "default": "fa-folder-open"
+  };
+
+  function pad2(n) { return String(n).padStart(2, "0"); }
+  function toISODate(d) {
+    const dt = new Date(d);
+    const y = dt.getFullYear();
+    const m = pad2(dt.getMonth()+1);
+    const da = pad2(dt.getDate());
+    return `${y}-${m}-${da}`;
+  }
+  function weekdayJP(dateStr) {
+    if (!dateStr) return "—";
+    const d = new Date(dateStr + "T00:00:00");
+    const map = ["日","月","火","水","木","金","土"];
+    return map[d.getDay()] ?? "—";
+  }
+  function fmtDue(dateStr) {
+    if (!dateStr) return "DUE: —";
+    const d = new Date(dateStr + "T00:00:00");
+    const y = d.getFullYear();
+    const m = pad2(d.getMonth()+1);
+    const da = pad2(d.getDate());
+    return `DUE: ${y}/${m}/${da}(${weekdayJP(dateStr)})`;
+  }
+  function withinRange(iso, from, to) {
+    if (!iso) return false;
+    const x = iso.slice(0,10);
+    if (from && x < from) return false;
+    if (to && x > to) return false;
+    return true;
+  }
+
+  function safeJsonParse(s, fallback) {
+    try { return JSON.parse(s); } catch { return fallback; }
+  }
+
+  class IDBStore {
+    constructor() { this.db = null; }
+    async open() {
+      return new Promise((resolve, reject) => {
+        if (!("indexedDB" in window)) {
+          reject(new Error("IndexedDB not supported"));
+          return;
+        }
+        const req = indexedDB.open(DB_NAME, DB_VER);
+        req.onerror = () => reject(req.error || new Error("IndexedDB open failed"));
+        req.onupgradeneeded = (ev) => {
+          const db = ev.target.result;
+
+          // tasks
+          if (!db.objectStoreNames.contains("tasks")) {
+            const s = db.createObjectStore("tasks", { keyPath: "id", autoIncrement: true });
+            s.createIndex("archivedAt", "archivedAt", { unique: false });
+            s.createIndex("category", "category", { unique: false });
+          } else {
+            const s = req.transaction.objectStore("tasks");
+            if (!s.indexNames.contains("archivedAt")) s.createIndex("archivedAt", "archivedAt", { unique:false });
+            if (!s.indexNames.contains("category")) s.createIndex("category", "category", { unique:false });
+          }
+
+          // settings
+          if (!db.objectStoreNames.contains("settings")) {
+            db.createObjectStore("settings", { keyPath: "key" });
+          }
+
+          // logs
+          if (!db.objectStoreNames.contains("logs")) {
+            const l = db.createObjectStore("logs", { keyPath: "id", autoIncrement: true });
+            l.createIndex("endedAt", "endedAt", { unique: false });
+            l.createIndex("category", "category", { unique: false });
+            l.createIndex("taskId", "taskId", { unique: false });
+          }
+        };
+        req.onsuccess = () => { this.db = req.result; resolve(true); };
+      });
+    }
+    _tx(store, mode="readonly") { return this.db.transaction(store, mode).objectStore(store); }
+    getAll(store) {
+      return new Promise((resolve, reject) => {
+        const req = this._tx(store).getAll();
+        req.onerror = () => reject(req.error);
+        req.onsuccess = () => resolve(req.result || []);
+      });
+    }
+    get(store, key) {
+      return new Promise((resolve, reject) => {
+        const req = this._tx(store).get(key);
+        req.onerror = () => reject(req.error);
+        req.onsuccess = () => resolve(req.result || null);
+      });
+    }
+    add(store, val) {
+      return new Promise((resolve, reject) => {
+        const req = this._tx(store, "readwrite").add(val);
+        req.onerror = () => reject(req.error);
+        req.onsuccess = () => resolve(req.result);
+      });
+    }
+    put(store, val) {
+      return new Promise((resolve, reject) => {
+        const req = this._tx(store, "readwrite").put(val);
+        req.onerror = () => reject(req.error);
+        req.onsuccess = () => resolve(req.result);
+      });
+    }
+    del(store, key) {
+      return new Promise((resolve, reject) => {
+        const req = this._tx(store, "readwrite").delete(key);
+        req.onerror = () => reject(req.error);
+        req.onsuccess = () => resolve(true);
+      });
+    }
+    clear(store) {
+      return new Promise((resolve, reject) => {
+        const req = this._tx(store, "readwrite").clear();
+        req.onerror = () => reject(req.error);
+        req.onsuccess = () => resolve(true);
+      });
+    }
+  }
+
+  class LocalStore {
+    constructor() {
+      this.prefix = "archive_pomodoro_v2:";
+    }
+    async open() { return true; }
+    _key(store) { return `${this.prefix}${store}`; }
+    _read(store) { return safeJsonParse(localStorage.getItem(this._key(store)) || "[]", []); }
+    _write(store, arr) { localStorage.setItem(this._key(store), JSON.stringify(arr)); }
+    async getAll(store) { return this._read(store); }
+    async get(store, key) {
+      const arr = this._read(store);
+      if (store === "settings") return arr.find(x => x.key === key) || null;
+      return arr.find(x => x.id === key) || null;
+    }
+    async add(store, val) {
+      const arr = this._read(store);
+      if (store === "settings") {
+        // settings add == put
+        const idx = arr.findIndex(x => x.key === val.key);
+        if (idx >= 0) arr[idx] = val; else arr.push(val);
+        this._write(store, arr);
+        return val.key;
+      }
+      const nextId = arr.reduce((m, x) => Math.max(m, Number(x.id||0)), 0) + 1;
+      const obj = { ...val, id: nextId };
+      arr.push(obj);
+      this._write(store, arr);
+      return nextId;
+    }
+    async put(store, val) {
+      const arr = this._read(store);
+      if (store === "settings") {
+        const idx = arr.findIndex(x => x.key === val.key);
+        if (idx >= 0) arr[idx] = val; else arr.push(val);
+        this._write(store, arr);
+        return val.key;
+      }
+      const idx = arr.findIndex(x => x.id === val.id);
+      if (idx >= 0) arr[idx] = val; else arr.push(val);
+      this._write(store, arr);
+      return val.id;
+    }
+    async del(store, key) {
+      const arr = this._read(store);
+      if (store === "settings") {
+        const next = arr.filter(x => x.key !== key);
+        this._write(store, next);
+        return true;
+      }
+      const next = arr.filter(x => x.id !== key);
+      this._write(store, next);
+      return true;
+    }
+    async clear(store) {
+      localStorage.removeItem(this._key(store));
+      return true;
+    }
+  }
+
+  class Timer {
+    constructor(onTick, onDone, onPhase) {
+      this.cfg = { work:25, short:5, long:15 };
+      this.phase = PHASE.WORK;
+      this.cycle = 0;
+      this.remaining = this.cfg.work * 60;
+      this.total = this.remaining;
+      this.running = false;
+      this.interval = null;
+      this.onTick = onTick;
+      this.onDone = onDone;
+      this.onPhase = onPhase;
+    }
+    setCfg(cfg) {
+      this.cfg = { ...this.cfg, ...cfg };
+      if (!this.running) this.reset();
+    }
+    start() {
+      if (this.running) return;
+      this.running = true;
+      this.interval = setInterval(() => this._tick(), 1000);
+    }
+    pause() {
+      this.running = false;
+      if (this.interval) { clearInterval(this.interval); this.interval = null; }
+    }
+    reset() {
+      this.pause();
+      this.phase = PHASE.WORK;
+      this.cycle = 0;
+      this.remaining = this.cfg.work * 60;
+      this.total = this.remaining;
+      this.onPhase(this.phase);
+      this.onTick(this.remaining, this.total, this.phase);
+    }
+    _tick() {
+      this.remaining -= 1;
+      this.onTick(this.remaining, this.total, this.phase);
+      if (this.remaining <= 0) this._done();
+    }
+    _done() {
+      this.pause();
+      const finished = this.phase;
+
+      if (this.phase === PHASE.WORK) {
+        this.cycle += 1;
+        this.onDone(true, finished);
+        this.phase = (this.cycle % 4 === 0) ? PHASE.LONG : PHASE.SHORT;
+        this.remaining = (this.phase === PHASE.LONG ? this.cfg.long : this.cfg.short) * 60;
+      } else {
+        this.onDone(false, finished);
+        this.phase = PHASE.WORK;
+        this.remaining = this.cfg.work * 60;
+      }
+      this.total = this.remaining;
+      this.onPhase(this.phase);
+      this.onTick(this.remaining, this.total, this.phase);
+    }
+  }
+
+  class App {
+    constructor() {
+      this.store = null;
+      this.timer = null;
+
+      this.tasks = [];
+      this.logs = [];
+      this.categories = new Set();
+      this.settings = {};
+
+      this.focusTaskId = null;
+      this.dbTab = "archived";
+
+      this.phase = PHASE.WORK;
+      this.phaseStartedAt = new Date().toISOString();
+
+      this.el = {};
+    }
+
+    cacheDom() {
+      const $ = (id) => document.getElementById(id);
+      this.el = {
+        sysText: $("sysText"),
+        timeText: $("timeText"),
+        phaseLabel: $("phaseLabel"),
+        phaseHint: $("phaseHint"),
+        ring: $("ring"),
+        ringText: $("ringText"),
+        barFill: $("barFill"),
+
+        focusTitle: $("focusTitle"),
+
+        btnStart: $("btnStart"),
+        btnPause: $("btnPause"),
+        btnReset: $("btnReset"),
+
+        btnAdd: $("btnAdd"),
+
+        activeGrid: $("activeGrid"),
+        counts: $("counts"),
+
+        tabArchived: $("tabArchived"),
+        tabLogs: $("tabLogs"),
+        dbList: $("dbList"),
+        filterCategory: $("filterCategory"),
+        filterFrom: $("filterFrom"),
+        filterTo: $("filterTo"),
+
+        cfgWork: $("cfgWork"),
+        cfgShort: $("cfgShort"),
+        cfgLong: $("cfgLong"),
+        btnNotify: $("btnNotify"),
+        btnSaveCfg: $("btnSaveCfg"),
+        btnExport: $("btnExport"),
+        btnClear: $("btnClear"),
+
+        // modal
+        taskModal: $("taskModal"),
+        modalTitle: $("modalTitle"),
+        btnClose: $("btnClose"),
+        btnCancel: $("btnCancel"),
+        btnSave: $("btnSave"),
+        btnDelete: $("btnDelete"),
+        btnUndo: $("btnUndo"),
+
+        taskForm: $("taskForm"),
+        taskId: $("taskId"),
+        taskTitle: $("taskTitle"),
+        taskDesc: $("taskDesc"),
+        taskCategory: $("taskCategory"),
+        taskPriority: $("taskPriority"),
+        taskDueDate: $("taskDueDate"),
+        dueWeekday: $("dueWeekday"),
+        taskInfo: $("taskInfo"),
+        categoryList: $("categoryList"),
+
+        toast: $("toast"),
+      };
+    }
+
+    async init() {
+      this.cacheDom();
+
+      // Try IndexedDB first, then fallback
+      const idb = new IDBStore();
+      try {
+        await idb.open();
+        this.store = idb;
+        this.setSystem("SYSTEM: ONLINE / STORAGE: INDEXEDDB");
+      } catch (e) {
+        console.warn("IndexedDB unavailable. Falling back to localStorage.", e);
+        this.store = new LocalStore();
+        await this.store.open();
+        this.setSystem("SYSTEM: ONLINE / STORAGE: LOCALSTORAGE (FILE MODE)");
+        this.toast("IndexedDB unavailable. Using localStorage fallback.");
+      }
+
+      await this.loadAll();
+      await this.ensureDefaults();
+      this.initTimer();
+      this.bind();
+      this.renderAll();
+      this.toast("SYSTEM READY");
+    }
+
+    setSystem(text) {
+      if (this.el.sysText) this.el.sysText.textContent = text;
+    }
+
+    async loadAll() {
+      this.tasks = await this.store.getAll("tasks");
+      this.logs = await this.store.getAll("logs");
+      const settingsArr = await this.store.getAll("settings");
+      this.settings = Object.fromEntries((settingsArr || []).map(x => [x.key, x.value]));
+      this.rebuildCategories();
+    }
+
+    rebuildCategories() {
+      this.categories = new Set();
+      for (const t of this.tasks) if (t.category) this.categories.add(t.category);
+      for (const l of this.logs) if (l.category) this.categories.add(l.category);
+    }
+
+    async ensureDefaults() {
+      const work = Number(this.settings.work ?? 25);
+      const short = Number(this.settings.short ?? 5);
+      const long = Number(this.settings.long ?? 15);
+      this.el.cfgWork.value = work;
+      this.el.cfgShort.value = short;
+      this.el.cfgLong.value = long;
+    }
+
+    initTimer() {
+      this.timer = new Timer(
+        (remaining, total, phase) => this.updateTimerUI(remaining, total, phase),
+        (isWorkDone, finishedPhase) => this.onTimerDone(isWorkDone, finishedPhase),
+        (phase) => this.onPhaseChange(phase)
+      );
+      this.timer.setCfg({
+        work: Number(this.el.cfgWork.value),
+        short: Number(this.el.cfgShort.value),
+        long: Number(this.el.cfgLong.value),
+      });
+      this.phase = this.timer.phase;
+      this.phaseStartedAt = new Date().toISOString();
+    }
+
+    bind() {
+      this.el.btnStart.addEventListener("click", () => {
+        this.timer.start();
+        this.el.btnStart.disabled = true;
+        this.el.btnPause.disabled = false;
+        if (!this.phaseStartedAt) this.phaseStartedAt = new Date().toISOString();
+      });
+      this.el.btnPause.addEventListener("click", () => {
+        this.timer.pause();
+        this.el.btnStart.disabled = false;
+        this.el.btnPause.disabled = true;
+      });
+      this.el.btnReset.addEventListener("click", () => {
+        this.timer.reset();
+        this.el.btnStart.disabled = false;
+        this.el.btnPause.disabled = true;
+        this.toast("RESET");
+      });
+
+      this.el.btnAdd.addEventListener("click", () => this.openTaskModal({ mode: "new" }));
+
+      // tabs
+      this.el.tabArchived.addEventListener("click", () => {
+        this.dbTab = "archived";
+        this.el.tabArchived.classList.add("active");
+        this.el.tabLogs.classList.remove("active");
+        this.renderDatabase();
+      });
+      this.el.tabLogs.addEventListener("click", () => {
+        this.dbTab = "logs";
+        this.el.tabLogs.classList.add("active");
+        this.el.tabArchived.classList.remove("active");
+        this.renderDatabase();
+      });
+
+      // filters
+      this.el.filterCategory.addEventListener("change", () => this.renderDatabase());
+      this.el.filterFrom.addEventListener("change", () => this.renderDatabase());
+      this.el.filterTo.addEventListener("change", () => this.renderDatabase());
+
+      // settings
+      this.el.btnNotify.addEventListener("click", () => this.requestNotification());
+      this.el.btnSaveCfg.addEventListener("click", () => this.saveSettings());
+      this.el.btnExport.addEventListener("click", () => this.exportJson());
+      this.el.btnClear.addEventListener("click", () => this.clearAll());
+
+      // modal
+      this.el.btnClose.addEventListener("click", () => this.closeTaskModal());
+      this.el.btnCancel.addEventListener("click", (e) => {
+        e.preventDefault();
+        this.closeTaskModal();
+      });
+      this.el.taskModal.addEventListener("click", (e) => {
+        if (e.target === this.el.taskModal) this.closeTaskModal();
+      });
+      this.el.taskDueDate.addEventListener("change", () => {
+        this.el.dueWeekday.textContent = `WEEKDAY: ${weekdayJP(this.el.taskDueDate.value)}`;
+      });
+
+      this.el.btnSave.addEventListener("click", async (e) => {
+        e.preventDefault();
+        await this.saveTaskFromModal();
+      });
+      this.el.btnDelete.addEventListener("click", async (e) => {
+        e.preventDefault();
+        const id = Number(this.el.taskId.value);
+        if (!id) return;
+        if (!confirm("削除しますか？")) return;
+        await this.store.del("tasks", id);
+        if (this.focusTaskId === id) this.setFocus(null);
+        await this.loadAll();
+        this.closeTaskModal();
+        this.renderAll();
+        this.toast("DELETED");
+      });
+      this.el.btnUndo.addEventListener("click", async (e) => {
+        e.preventDefault();
+        const id = Number(this.el.taskId.value);
+        if (!id) return;
+        await this.unarchiveTask(id);
+        this.closeTaskModal();
+      });
+    }
+
+    updateTimerUI(remaining, total, phase) {
+      const r = Math.max(0, remaining);
+      const mm = Math.floor(r / 60);
+      const ss = r % 60;
+      this.el.timeText.textContent = `${pad2(mm)}:${pad2(ss)}`;
+
+      this.el.phaseLabel.textContent = phase;
+      this.el.phaseHint.textContent = phase === PHASE.WORK ? "WORK SESSION" : "BREAK SESSION";
+      this.el.ringText.textContent = phase === PHASE.WORK ? "WORK" : "BREAK";
+
+      const p = total > 0 ? (1 - (r / total)) : 1;
+      const deg = Math.max(0, Math.min(1, p)) * 360;
+      this.el.ring.style.background = `conic-gradient(var(--holo-cyan) 0deg, var(--holo-cyan) ${deg}deg, rgba(0,240,255,0.15) ${deg}deg, rgba(0,240,255,0.15) 360deg)`;
+      this.el.barFill.style.width = `${Math.round(p * 100)}%`;
+    }
+
+    onPhaseChange(newPhase) {
+      this.phase = newPhase;
+      this.phaseStartedAt = new Date().toISOString();
+    }
+
+    async onTimerDone(isWorkDone, finishedPhase) {
+      const endedAt = new Date().toISOString();
+
+      if (isWorkDone) {
+        const task = this.focusTaskId ? this.tasks.find(t => t.id === this.focusTaskId) : null;
+
+        if (task) {
+          task.pomodoroCount = (task.pomodoroCount || 0) + 1;
+          await this.store.put("tasks", task);
+        }
+
+        // LOG: WORK completion only
+        const durationMin = Number(this.settings.work ?? this.el.cfgWork.value ?? 25);
+        await this.store.add("logs", {
+          phase: PHASE.WORK,
+          durationMin,
+          startedAt: this.phaseStartedAt,
+          endedAt,
+          taskId: task?.id ?? null,
+          taskTitle: task?.title ?? null,
+          category: task?.category ?? null,
+          createdAt: new Date().toISOString(),
+        });
+      }
+
+      this.beep();
+      this.notify(
+        isWorkDone ? "作業完了！" : "休憩終了！",
+        isWorkDone ? "休憩を取りましょう" : "作業を再開しましょう"
+      );
+
+      await this.loadAll();
+      this.renderAll();
+      this.toast(isWorkDone ? "WORK SESSION COMPLETE" : "BREAK COMPLETE");
+
+      this.el.btnStart.disabled = false;
+      this.el.btnPause.disabled = true;
+    }
+
+    categoryToIcon(cat) {
+      const c = (cat || "").toLowerCase();
+      if (c.includes("work")) return ICONS.work;
+      if (c.includes("study")) return ICONS.study;
+      if (c.includes("read")) return ICONS.read;
+      if (c.includes("write")) return ICONS.write;
+      return ICONS.default;
+    }
+
+    setFocus(taskId) {
+      this.focusTaskId = taskId;
+      const t = this.tasks.find(x => x.id === taskId && !(x.archivedAt || x.completed));
+      if (t) {
+        this.el.focusTitle.textContent = t.title;
+        this.el.focusTitle.classList.remove("empty");
+      } else {
+        this.el.focusTitle.textContent = "— 未選択 —";
+        this.el.focusTitle.classList.add("empty");
+      }
+    }
+
+    async archiveTask(taskId) {
+      const t = this.tasks.find(x => x.id === taskId);
+      if (!t) return;
+      t.archivedAt = new Date().toISOString();
+      t.completed = true; // backward compatibility
+      t.completedAt = t.archivedAt;
+
+      await this.store.put("tasks", t);
+      if (this.focusTaskId === taskId) this.setFocus(null);
+      await this.loadAll();
+      this.renderAll();
+      this.toast("ARCHIVED");
+    }
+
+    async unarchiveTask(taskId) {
+      const t = this.tasks.find(x => x.id === taskId);
+      if (!t) return;
+      t.archivedAt = null;
+      t.completed = false;
+      t.completedAt = null;
+      await this.store.put("tasks", t);
+      await this.loadAll();
+      this.renderAll();
+      this.toast("RESTORED");
+    }
+
+    openTaskModal({ mode, taskId=null } = {}) {
+      const m = this.el.taskModal;
+      m.classList.add("active");
+      m.setAttribute("aria-hidden", "false");
+
+      this.el.categoryList.innerHTML = "";
+      Array.from(this.categories).sort().forEach(c => {
+        const o = document.createElement("option");
+        o.value = c;
+        this.el.categoryList.appendChild(o);
+      });
+
+      const t = taskId ? this.tasks.find(x => x.id === taskId) : null;
+
+      if (mode === "new") {
+        this.el.modalTitle.textContent = "SUBJECT: NEW";
+        this.el.taskId.value = "";
+        this.el.taskTitle.value = "";
+        this.el.taskDesc.value = "";
+        this.el.taskCategory.value = "";
+        this.el.taskPriority.value = "medium";
+
+        const d = new Date();
+        d.setDate(d.getDate() + 7);
+        this.el.taskDueDate.value = toISODate(d);
+        this.el.dueWeekday.textContent = `WEEKDAY: ${weekdayJP(this.el.taskDueDate.value)}`;
+        this.el.taskInfo.textContent = "NEW ENTRY";
+
+        this.setModalReadOnly(false);
+        this.el.btnSave.style.display = "inline-flex";
+        this.el.btnDelete.style.display = "none";
+        this.el.btnUndo.style.display = "none";
+        return;
+      }
+
+      if (!t) {
+        this.toast("NOT FOUND");
+        this.closeTaskModal();
+        return;
+      }
+
+      this.el.taskId.value = String(t.id);
+      this.el.taskTitle.value = t.title ?? "";
+      this.el.taskDesc.value = t.description ?? "";
+      this.el.taskCategory.value = t.category ?? "";
+      this.el.taskPriority.value = t.priority ?? "medium";
+      this.el.taskDueDate.value = t.dueDate ?? "";
+      this.el.dueWeekday.textContent = `WEEKDAY: ${weekdayJP(this.el.taskDueDate.value)}`;
+
+      const infoBits = [
+        `ID: ${t.id}`,
+        `POMO: ${t.pomodoroCount ?? 0}`,
+        t.createdAt ? `CREATED: ${t.createdAt.slice(0,10)}` : null,
+        (t.archivedAt || t.completedAt) ? `ARCHIVED: ${(t.archivedAt || t.completedAt).slice(0,10)}` : null,
+      ].filter(Boolean);
+      this.el.taskInfo.textContent = infoBits.join(" / ");
+
+      const isArchived = !!(t.archivedAt || t.completed);
+      if (mode === "view") {
+        this.el.modalTitle.textContent = "SUBJECT: ARCHIVED (READONLY)";
+        this.setModalReadOnly(true);
+        this.el.btnSave.style.display = "none";
+        this.el.btnDelete.style.display = "none";
+        this.el.btnUndo.style.display = isArchived ? "inline-flex" : "none";
+      } else {
+        this.el.modalTitle.textContent = "SUBJECT: EDIT";
+        this.setModalReadOnly(false);
+        this.el.btnSave.style.display = "inline-flex";
+        this.el.btnDelete.style.display = "inline-flex";
+        this.el.btnUndo.style.display = "none";
+      }
+    }
+
+    closeTaskModal() {
+      const m = this.el.taskModal;
+      m.classList.remove("active");
+      m.setAttribute("aria-hidden", "true");
+    }
+
+    setModalReadOnly(readOnly) {
+      const fields = [this.el.taskTitle, this.el.taskDesc, this.el.taskCategory, this.el.taskPriority, this.el.taskDueDate];
+      fields.forEach(el => {
+        el.disabled = !!readOnly;
+        if ("readOnly" in el) el.readOnly = !!readOnly;
+      });
+    }
+
+    async saveTaskFromModal() {
+      const id = Number(this.el.taskId.value || 0);
+      const title = this.el.taskTitle.value.trim();
+      if (!title) { this.toast("TITLE REQUIRED"); return; }
+
+      const base = {
+        title,
+        description: this.el.taskDesc.value.trim(),
+        category: this.el.taskCategory.value.trim(),
+        priority: this.el.taskPriority.value,
+        dueDate: this.el.taskDueDate.value,
+      };
+
+      if (id) {
+        const prev = this.tasks.find(x => x.id === id);
+        const updated = { ...prev, ...base };
+        await this.store.put("tasks", updated);
+        this.toast("UPDATED");
+      } else {
+        const created = {
+          ...base,
+          pomodoroCount: 0,
+          archivedAt: null,
+          completed: false,
+          createdAt: new Date().toISOString(),
+        };
+        await this.store.add("tasks", created);
+        this.toast("CREATED");
+      }
+
+      await this.loadAll();
+      this.renderAll();
+      this.closeTaskModal();
+    }
+
+    renderAll() {
+      const active = this.tasks.filter(t => !(t.archivedAt || t.completed));
+      const archived = this.tasks.filter(t => (t.archivedAt || t.completed));
+      this.el.counts.textContent = `ACTIVE: ${active.length} / ARCHIVED: ${archived.length}`;
+
+      this.renderActiveGrid(active);
+      this.renderFilters();
+      this.renderDatabase();
+
+      if (this.focusTaskId && !this.tasks.find(t => t.id === this.focusTaskId && !(t.archivedAt || t.completed))) {
+        this.setFocus(null);
+      } else {
+        this.setFocus(this.focusTaskId);
+      }
+    }
+
+    renderActiveGrid(activeTasks) {
+      const grid = this.el.activeGrid;
+      grid.innerHTML = "";
+
+      if (activeTasks.length === 0) {
+        const empty = document.createElement("div");
+        empty.className = "hint";
+        empty.textContent = "ACTIVE SUBJECTS: none. Create a new entry.";
+        grid.appendChild(empty);
+        return;
+      }
+
+      const pr = { high: 0, medium: 1, low: 2 };
+      const sorted = [...activeTasks].sort((a,b) => {
+        const pa = pr[a.priority] ?? 9;
+        const pb = pr[b.priority] ?? 9;
+        if (pa !== pb) return pa - pb;
+        const da = a.dueDate || "9999-99-99";
+        const db = b.dueDate || "9999-99-99";
+        return da.localeCompare(db);
+      });
+
+      for (const t of sorted) {
+        const card = document.createElement("div");
+        card.className = "card" + (this.focusTaskId === t.id ? " focus" : "");
+        card.addEventListener("click", () => {
+          this.setFocus(t.id);
+          this.renderAll();
+        });
+
+        const thumb = document.createElement("div");
+        thumb.className = "thumb";
+        const i = document.createElement("i");
+        i.className = "fa-solid " + this.categoryToIcon(t.category);
+        thumb.appendChild(i);
+
+        const meta = document.createElement("div");
+        meta.className = "meta";
+        const title = document.createElement("div");
+        title.className = "title";
+        title.textContent = t.title;
+
+        const small = document.createElement("div");
+        small.className = "small";
+        const b1 = document.createElement("span");
+        b1.className = "badge";
+        b1.textContent = fmtDue(t.dueDate);
+        const b2 = document.createElement("span");
+        b2.className = "badge";
+        b2.textContent = `POMO: ${t.pomodoroCount ?? 0}`;
+        const b3 = document.createElement("span");
+        b3.className = "badge";
+        b3.textContent = `CAT: ${t.category || "—"}`;
+        small.append(b1,b2,b3);
+
+        meta.append(title, small);
+
+        const actions = document.createElement("div");
+        actions.className = "actions";
+
+        const edit = document.createElement("button");
+        edit.className = "iconbtn";
+        edit.title = "Edit";
+        edit.innerHTML = '<i class="fa-solid fa-pen-to-square"></i>';
+        edit.addEventListener("click", (e) => {
+          e.stopPropagation();
+          this.openTaskModal({ mode: "edit", taskId: t.id });
+        });
+
+        const done = document.createElement("button");
+        done.className = "iconbtn";
+        done.title = "Done (Archive)";
+        done.innerHTML = '<i class="fa-solid fa-box-archive"></i>';
+        done.addEventListener("click", (e) => {
+          e.stopPropagation();
+          this.archiveTask(t.id);
+        });
+
+        actions.append(edit, done);
+
+        card.append(thumb, meta, actions);
+        grid.appendChild(card);
+      }
+    }
+
+    renderFilters() {
+      const sel = this.el.filterCategory;
+      const current = sel.value;
+      sel.innerHTML = "";
+      const optAll = document.createElement("option");
+      optAll.value = "";
+      optAll.textContent = "CATEGORY: ALL";
+      sel.appendChild(optAll);
+
+      Array.from(this.categories).sort().forEach(c => {
+        const o = document.createElement("option");
+        o.value = c;
+        o.textContent = `CATEGORY: ${c}`;
+        sel.appendChild(o);
+      });
+
+      if ([...sel.options].some(o => o.value === current)) sel.value = current;
+    }
+
+    renderDatabase() {
+      const list = this.el.dbList;
+      list.innerHTML = "";
+
+      const cat = this.el.filterCategory.value;
+      const from = this.el.filterFrom.value;
+      const to = this.el.filterTo.value;
+
+      if (this.dbTab === "archived") {
+        const archived = this.tasks.filter(t => (t.archivedAt || t.completed));
+        const filtered = archived.filter(t => {
+          if (cat && (t.category || "") !== cat) return false;
+          if (from || to) {
+            const iso = (t.archivedAt || t.completedAt || t.createdAt || "");
+            if (!withinRange(iso, from, to)) return false;
+          }
+          return true;
+        }).sort((a,b) => (b.archivedAt || b.completedAt || "").localeCompare(a.archivedAt || a.completedAt || ""));
+
+        if (filtered.length === 0) {
+          const empty = document.createElement("div");
+          empty.className = "hint";
+          empty.textContent = "ARCHIVED TASKS: none.";
+          list.appendChild(empty);
+          return;
+        }
+
+        for (const t of filtered) {
+          const row = document.createElement("div");
+          row.className = "rowcard";
+          row.addEventListener("click", () => this.openTaskModal({ mode: "view", taskId: t.id }));
+
+          const left = document.createElement("div");
+          left.className = "left";
+          const ttl = document.createElement("div");
+          ttl.className = "t";
+          ttl.textContent = t.title;
+
+          const m = document.createElement("div");
+          m.className = "m";
+          const a1 = document.createElement("span");
+          a1.className = "badge";
+          a1.textContent = `ARCHIVED: ${(t.archivedAt || t.completedAt || "").slice(0,10)}`;
+          const a2 = document.createElement("span");
+          a2.className = "badge";
+          a2.textContent = fmtDue(t.dueDate);
+          const a3 = document.createElement("span");
+          a3.className = "badge";
+          a3.textContent = `POMO: ${t.pomodoroCount ?? 0}`;
+          const a4 = document.createElement("span");
+          a4.className = "badge";
+          a4.textContent = `CAT: ${t.category || "—"}`;
+          m.append(a1,a2,a3,a4);
+
+          left.append(ttl,m);
+
+          const right = document.createElement("div");
+          right.className = "right";
+
+          const undo = document.createElement("button");
+          undo.className = "iconbtn";
+          undo.title = "Undo (Restore)";
+          undo.innerHTML = '<i class="fa-solid fa-rotate-left"></i>';
+          undo.addEventListener("click", (e) => {
+            e.stopPropagation();
+            this.unarchiveTask(t.id);
+          });
+          right.appendChild(undo);
+
+          row.append(left, right);
+          list.appendChild(row);
+        }
+        return;
+      }
+
+      // logs tab
+      const filtered = this.logs.filter(l => {
+        if (cat && (l.category || "") !== cat) return false;
+        if (from || to) {
+          if (!withinRange(l.endedAt, from, to)) return false;
+        }
+        return true;
+      }).sort((a,b) => (b.endedAt || "").localeCompare(a.endedAt || ""));
+
+      if (filtered.length === 0) {
+        const empty = document.createElement("div");
+        empty.className = "hint";
+        empty.textContent = "SESSION LOGS: none (WORK completion only).";
+        list.appendChild(empty);
+        return;
+      }
+
+      for (const l of filtered) {
+        const row = document.createElement("div");
+        row.className = "rowcard";
+
+        const left = document.createElement("div");
+        left.className = "left";
+
+        const ttl = document.createElement("div");
+        ttl.className = "t";
+        ttl.textContent = l.taskTitle ? `WORK: ${l.taskTitle}` : "WORK: (NO TASK SELECTED)";
+
+        const m = document.createElement("div");
+        m.className = "m";
+        const b1 = document.createElement("span");
+        b1.className = "badge";
+        b1.textContent = `ENDED: ${(l.endedAt || "").slice(0,19).replace("T"," ")}`;
+        const b2 = document.createElement("span");
+        b2.className = "badge";
+        b2.textContent = `DUR: ${l.durationMin ?? "?"} min`;
+        const b3 = document.createElement("span");
+        b3.className = "badge";
+        b3.textContent = `CAT: ${l.category || "—"}`;
+        const b4 = document.createElement("span");
+        b4.className = "badge";
+        b4.textContent = `TASKID: ${l.taskId ?? "—"}`;
+        m.append(b1,b2,b3,b4);
+
+        left.append(ttl,m);
+        row.append(left);
+        list.appendChild(row);
+      }
+    }
+
+    async requestNotification() {
+      if (!("Notification" in window)) {
+        this.toast("NOTIFICATION UNSUPPORTED");
+        return;
+      }
+      const p = await Notification.requestPermission();
+      this.toast(`NOTIFY: ${String(p).toUpperCase()}`);
+    }
+
+    notify(title, body) {
+      try {
+        if (!("Notification" in window)) return;
+        if (Notification.permission !== "granted") return;
+        new Notification(title, { body });
+      } catch {}
+    }
+
+    beep() {
+      try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        const ctx = new AudioContext();
+        const o = ctx.createOscillator();
+        const g = ctx.createGain();
+        o.type = "sine";
+        o.frequency.value = 880;
+        g.gain.value = 0.06;
+        o.connect(g);
+        g.connect(ctx.destination);
+        o.start();
+        setTimeout(() => {
+          o.stop();
+          ctx.close();
+        }, 180);
+      } catch {}
+    }
+
+    async saveSettings() {
+      const work = Math.max(1, Number(this.el.cfgWork.value || 25));
+      const short = Math.max(1, Number(this.el.cfgShort.value || 5));
+      const long = Math.max(1, Number(this.el.cfgLong.value || 15));
+
+      await this.store.put("settings", { key:"work", value:work });
+      await this.store.put("settings", { key:"short", value:short });
+      await this.store.put("settings", { key:"long", value:long });
+
+      this.settings.work = work;
+      this.settings.short = short;
+      this.settings.long = long;
+
+      this.timer.setCfg({ work, short, long });
+      this.toast("SETTINGS SAVED");
+    }
+
+    async exportJson() {
+      await this.loadAll();
+      const payload = {
+        exportedAt: new Date().toISOString(),
+        tasks: this.tasks,
+        logs: this.logs,
+        settings: this.settings,
+      };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type:"application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `archive-pomodoro-export-${new Date().toISOString().slice(0,10)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      this.toast("EXPORTED");
+    }
+
+    async clearAll() {
+      if (!confirm("すべてのデータを削除しますか？（tasks / settings / logs）")) return;
+      await this.store.clear("tasks");
+      await this.store.clear("settings");
+      await this.store.clear("logs");
+      this.focusTaskId = null;
+      this.tasks = [];
+      this.logs = [];
+      this.timer.reset();
+      this.renderAll();
+      this.toast("CLEARED");
+    }
+
+    toast(msg) {
+      const el = this.el.toast;
+      el.textContent = msg;
+      el.classList.add("show");
+      clearTimeout(this._toastTimer);
+      this._toastTimer = setTimeout(() => el.classList.remove("show"), 1700);
+    }
+  }
+
+  window.addEventListener("DOMContentLoaded", async () => {
+    const app = new App();
+    window.app = app;
+    try {
+      await app.init();
+      app.setFocus(null);
+    } catch (e) {
+      console.error(e);
+      const sys = document.getElementById("sysText");
+      if (sys) sys.textContent = "SYSTEM: ERROR";
+      // Visible explanation
+      alert("初期化に失敗しました。\n" +
+            "原因: ブラウザが local file (file://) でのストレージを制限している可能性があります。\n" +
+            "対策: (1) 別ブラウザで開く  (2) 簡易ローカルサーバで開く (推奨)\n\n" +
+            (e?.message || e));
+    }
+  });
+})();
+</script>
+</body>
+</html>

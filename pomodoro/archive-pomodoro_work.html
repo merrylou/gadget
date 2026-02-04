@@ -1,0 +1,1268 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ARCHIVE: POMODORO</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+
+        :root {
+            --bg-deep: #08080a;
+            --bg-surface: #0c0c10;
+            --bg-elevated: #121218;
+            --bg-card: #0e0e14;
+            --border-dim: #1a1a24;
+            --border-glow: #2a2a38;
+            --text-primary: #ffffff;
+            --text-secondary: #c8c8c8;
+            --text-muted: #b0b0b0;
+            --accent: #00F0FF;
+            --accent-dim: rgba(0, 240, 255, 0.6);
+            --success: #99ff99;
+            --danger: #ff9999;
+            --warning: #ffdd99;
+            --glow: rgba(0, 240, 255, 0.25);
+            --glow-strong: rgba(0, 240, 255, 0.4);
+            --font: 'Share Tech Mono', monospace;
+            --base-font-size: 13px;
+            /* +~8% from 12px for slight readability improvement */
+            --motion-fast: 0.30s;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font);
+            background: var(--bg-deep);
+            color: var(--text-primary);
+            min-height: 100vh;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0.8rem;
+        }
+
+        /* ===== HEADER ===== */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0;
+            margin-bottom: 0.8rem;
+            border-bottom: 1px solid var(--border-dim);
+        }
+
+        .header-title {
+            font-size: 11px;
+            letter-spacing: 0.3em;
+            color: var(--text-primary);
+        }
+
+        .header-status {
+            font-size: 10px;
+            color: var(--success);
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .status-dot {
+            width: 5px;
+            height: 5px;
+            background: var(--success);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.4;
+            }
+        }
+
+        /* ===== SECTION ===== */
+        .section {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-dim);
+            margin-bottom: 0.8rem;
+            padding: 0.8rem;
+        }
+
+        .section-label {
+            font-size: 9px;
+            letter-spacing: 0.15em;
+            color: var(--accent);
+            margin-bottom: 0.6rem;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .section-label::before {
+            content: '◇';
+            opacity: 0.5;
+        }
+
+        /* ===== TIMER ===== */
+        .timer-section {
+            display: flex;
+            gap: 1.5rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .timer-display {
+            position: relative;
+            width: 140px;
+            height: 140px;
+            flex-shrink: 0;
+        }
+
+        .timer-ring {
+            position: absolute;
+            inset: 0;
+        }
+
+        .timer-ring svg {
+            width: 100%;
+            height: 100%;
+            transform: rotate(-90deg);
+        }
+
+        .timer-ring-bg {
+            fill: none;
+            stroke: var(--border-dim);
+            stroke-width: 3;
+        }
+
+        .timer-ring-progress {
+            fill: none;
+            stroke: var(--accent);
+            stroke-width: 3;
+            stroke-linecap: round;
+            stroke-dasharray: 408;
+            stroke-dashoffset: 0;
+            transition: stroke-dashoffset 0.5s;
+            filter: drop-shadow(0 0 6px var(--glow));
+        }
+
+        .timer-ring-progress.break {
+            stroke: var(--success);
+        }
+
+        .timer-center {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .timer-time {
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+        }
+
+        .timer-state {
+            font-size: 9px;
+            letter-spacing: 0.2em;
+            color: var(--accent);
+            margin-top: 2px;
+        }
+
+        .timer-state.break {
+            color: var(--success);
+        }
+
+        .timer-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+
+        .timer-btn {
+            font-family: var(--font);
+            font-size: 10px;
+            letter-spacing: 0.1em;
+            padding: 0.5rem 1.2rem;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-dim);
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .timer-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .timer-btn.primary {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: var(--bg-deep);
+        }
+
+        .timer-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .timer-info {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .focus-label {
+            font-size: 9px;
+            color: var(--text-muted);
+            margin-bottom: 0.2rem;
+        }
+
+        .focus-title {
+            font-size: 13px;
+            color: var(--text-primary);
+            padding: 0.4rem 0.6rem;
+            background: var(--bg-elevated);
+            border-left: 2px solid var(--accent);
+        }
+
+        .focus-title.empty {
+            color: var(--text-muted);
+            font-style: italic;
+        }
+
+        /* ===== TASK GRID ===== */
+        .task-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.6rem;
+        }
+
+        .add-btn {
+            font-family: var(--font);
+            font-size: 9px;
+            padding: 0.35rem 0.7rem;
+            background: transparent;
+            border: 1px solid var(--accent);
+            color: var(--accent);
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .add-btn:hover {
+            background: var(--accent);
+            color: var(--bg-deep);
+        }
+
+        .search-parameters {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 0;
+            margin-bottom: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .search-label {
+            font-size: 9px;
+            color: var(--text-muted);
+            letter-spacing: 0.1em;
+            flex-shrink: 0;
+        }
+
+        .tag-container {
+            display: flex;
+            gap: 0.3rem;
+            flex-wrap: wrap;
+            flex: 1;
+        }
+
+        .tag-btn {
+            font-family: var(--font);
+            font-size: 9px;
+            padding: 0.25rem 0.5rem;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-glow);
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all var(--motion-fast);
+            border-radius: 3px;
+            letter-spacing: 0.05em;
+        }
+
+        .tag-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .tag-btn.active {
+            background: var(--accent);
+            color: var(--bg-deep);
+            border-color: var(--accent);
+        }
+
+        .tag-clear {
+            flex-shrink: 0;
+        }
+
+        .task-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 0.6rem;
+        }
+
+        .task-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-dim);
+            padding: 0.6rem 0.6rem 0.6rem 0.9rem;
+            cursor: pointer;
+            transition: all var(--motion-fast);
+            position: relative;
+        }
+
+        .task-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, var(--accent), transparent);
+            opacity: 0;
+            transition: opacity var(--motion-fast);
+        }
+
+        .task-card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: var(--accent);
+            transform-origin: center;
+            transform: scaleY(0);
+            transition: transform var(--motion-fast);
+        }
+
+        .task-card:hover {
+            box-shadow: 0 0 12px var(--glow);
+        }
+
+        .task-card:hover::before {
+            opacity: 1;
+        }
+
+        .task-card:hover::after {
+            transform: scaleY(1);
+        }
+
+        .task-card.focused {
+            box-shadow: 0 0 15px var(--glow);
+        }
+
+        .task-card.focused::after {
+            transform: scaleY(1);
+        }
+
+        .task-card.focused::before {
+            opacity: 1;
+        }
+
+        .task-card-header {
+            display: flex;
+            gap: 0.5rem;
+            align-items: flex-start;
+            margin-bottom: 0.4rem;
+        }
+
+        .task-thumb {
+            width: 36px;
+            height: 36px;
+            background: var(--bg-elevated);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            color: var(--accent);
+            flex-shrink: 0;
+            filter: grayscale(100%);
+            transition: filter var(--motion-fast), box-shadow var(--motion-fast), transform var(--motion-fast);
+            position: relative;
+            transform-origin: center;
+        }
+
+        .task-thumb::before {
+            content: '';
+            position: absolute;
+            inset: -2px;
+            border-radius: 50%;
+            border: 3px solid transparent;
+            border-top-color: var(--accent);
+            border-right-color: var(--accent);
+            opacity: 0.3;
+            animation: spin 4s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .task-card:hover .task-thumb {
+            filter: grayscale(0%);
+            box-shadow: 0 0 10px var(--glow);
+            transform: scale(1.03);
+        }
+
+        .task-card:hover .task-thumb::before {
+            opacity: 0.8;
+        }
+
+        .task-card.focused .task-thumb {
+            filter: grayscale(0%);
+            box-shadow: 0 0 12px var(--glow);
+            transform: scale(1.05);
+        }
+
+        .task-card.focused .task-thumb::before {
+            opacity: 1;
+        }
+
+        .task-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .task-title {
+            font-size: 11px;
+            font-weight: 700;
+            margin-bottom: 2px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .task-link-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 14px;
+            height: 14px;
+            color: var(--accent);
+            text-decoration: none;
+            flex-shrink: 0;
+            transition: all 0.2s ease;
+        }
+
+        .task-link-icon:hover {
+            color: var(--text-primary);
+            text-shadow: 0 0 8px var(--glow);
+        }
+
+        .task-cat {
+            font-size: 8px;
+            color: var(--accent);
+            background: rgba(0, 240, 255, 0.1);
+            padding: 1px 4px;
+            display: inline-block;
+        }
+
+        .task-meta {
+            display: flex;
+            justify-content: space-between;
+            font-size: 9px;
+            color: var(--text-muted);
+            margin-top: 0.3rem;
+        }
+
+        .task-pomo {
+            color: var(--accent);
+        }
+
+        .task-due {
+            color: var(--text-secondary);
+        }
+
+        .task-due.due-soon {
+            color: var(--accent);
+            font-weight: bold;
+        }
+
+        .task-due.due-overdue {
+            color: var(--danger);
+            font-weight: bold;
+        }
+
+        .priority-high {
+            color: var(--danger);
+            text-shadow: 0 0 8px rgba(255, 153, 153, 0.4);
+        }
+
+        .priority-medium {
+            color: var(--warning);
+            text-shadow: 0 0 8px rgba(255, 221, 153, 0.4);
+        }
+
+        .priority-low {
+            color: var(--success);
+            text-shadow: 0 0 8px rgba(153, 255, 153, 0.4);
+        }
+
+        .task-actions {
+            display: flex;
+            gap: 0.3rem;
+            margin-top: 0.4rem;
+            padding-top: 0.4rem;
+            border-top: 1px solid var(--border-dim);
+        }
+
+        .task-action {
+            font-family: var(--font);
+            font-size: 8px;
+            padding: 0.25rem 0.5rem;
+            background: transparent;
+            border: 1px solid var(--border-dim);
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .task-action:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .task-action.done:hover {
+            border-color: var(--success);
+            color: var(--success);
+        }
+
+        .task-action.del:hover {
+            border-color: var(--danger);
+            color: var(--danger);
+        }
+
+        .empty {
+            text-align: center;
+            padding: 1.5rem;
+            color: var(--text-muted);
+            font-size: 11px;
+        }
+
+        /* ===== DATABASE ===== */
+        .filters {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 0.6rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-select {
+            font-family: var(--font);
+            font-size: 9px;
+            padding: 0.3rem 0.6rem;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-dim);
+            color: var(--text-primary);
+            cursor: pointer;
+        }
+
+        .filter-select:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .archive-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
+        }
+
+        .archive-item {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            padding: 0.5rem;
+            background: var(--bg-elevated);
+            border-left: 2px solid var(--accent);
+            transition: all 0.2s;
+        }
+
+        .archive-item:hover {
+            background: var(--bg-card);
+        }
+
+        .archive-num {
+            font-size: 9px;
+            color: var(--text-muted);
+            min-width: 30px;
+        }
+
+        .archive-content {
+            flex: 1;
+        }
+
+        .archive-title {
+            font-size: 11px;
+        }
+
+        .archive-meta {
+            font-size: 9px;
+            color: var(--text-muted);
+            display: flex;
+            gap: 0.8rem;
+        }
+
+        /* ===== SYSTEM ===== */
+        .system-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 0.6rem;
+        }
+
+        .system-card {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-dim);
+            padding: 0.6rem;
+        }
+
+        .system-card-title {
+            font-size: 9px;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+            letter-spacing: 0.1em;
+        }
+
+        .setting-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.4rem;
+            font-size: 10px;
+        }
+
+        .setting-input {
+            font-family: var(--font);
+            font-size: 10px;
+            width: 50px;
+            padding: 0.2rem;
+            background: var(--bg-surface);
+            border: 1px solid var(--border-dim);
+            color: var(--text-primary);
+            text-align: center;
+        }
+
+        .setting-input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .sys-btn {
+            width: 100%;
+            font-family: var(--font);
+            font-size: 9px;
+            padding: 0.4rem;
+            background: var(--bg-surface);
+            border: 1px solid var(--border-dim);
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 0.3rem;
+        }
+
+        .sys-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .sys-btn.danger:hover {
+            border-color: var(--danger);
+            color: var(--danger);
+        }
+
+        /* ===== MODAL ===== */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal {
+            background: var(--bg-surface);
+            border: 1px solid var(--accent);
+            width: 90%;
+            max-width: 360px;
+            max-height: 85vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            padding: 0.6rem 0.8rem;
+            border-bottom: 1px solid var(--border-dim);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title {
+            font-size: 10px;
+            letter-spacing: 0.15em;
+            color: var(--accent);
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .modal-close:hover {
+            color: var(--text-primary);
+        }
+
+        .modal-body {
+            padding: 0.8rem;
+        }
+
+        .form-group {
+            margin-bottom: 0.6rem;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 9px;
+            color: var(--text-muted);
+            margin-bottom: 0.2rem;
+        }
+
+        .form-hint {
+            margin-top: 0.25rem;
+            font-size: 10px;
+            color: var(--text-muted);
+            font-family: var(--font-mono);
+            letter-spacing: 0.08em;
+        }
+
+        .form-input,
+        .form-select,
+        .form-textarea {
+            width: 100%;
+            font-family: var(--font);
+            font-size: 11px;
+            padding: 0.5rem;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-dim);
+            color: var(--text-primary);
+        }
+
+        .form-input:focus,
+        .form-select:focus,
+        .form-textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .form-textarea {
+            min-height: 60px;
+            resize: vertical;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.8rem;
+        }
+
+        .form-btn {
+            flex: 1;
+            font-family: var(--font);
+            font-size: 10px;
+            padding: 0.5rem;
+            border: 1px solid var(--border-dim);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .form-btn.primary {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: var(--bg-deep);
+        }
+
+        .form-btn.secondary {
+            background: transparent;
+            color: var(--text-primary);
+        }
+
+        .form-btn.secondary:hover {
+            border-color: var(--text-primary);
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 1rem;
+            right: 1rem;
+            padding: 0.5rem 1rem;
+            background: var(--bg-elevated);
+            border: 1px solid var(--accent);
+            color: var(--text-primary);
+            font-size: 10px;
+            transform: translateY(60px);
+            opacity: 0;
+            transition: all 0.2s;
+            z-index: 2000;
+        }
+
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        @media (max-width: 600px) {
+            .timer-section {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .timer-display {
+                margin: 0 auto;
+            }
+
+            .timer-controls {
+                flex-direction: row;
+                justify-content: center;
+            }
+
+            .task-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="header-title">ARCHIVE: POMODORO</div>
+            <div class="header-status"><span class="status-dot"></span>ONLINE</div>
+        </header>
+
+        <section class="section">
+            <div class="section-label">FILE: 00-CHRONOMETER</div>
+            <div class="timer-section">
+                <div class="timer-display">
+                    <div class="timer-ring">
+                        <svg viewBox="0 0 140 140">
+                            <circle class="timer-ring-bg" cx="70" cy="70" r="65" />
+                            <circle class="timer-ring-progress" id="timerProgress" cx="70" cy="70" r="65" />
+                        </svg>
+                    </div>
+                    <div class="timer-center">
+                        <div class="timer-time" id="timerDisplay">25:00</div>
+                        <div class="timer-state" id="timerState">WORK</div>
+                    </div>
+                </div>
+                <div class="timer-controls">
+                    <button class="timer-btn primary" id="startBtn">START</button>
+                    <button class="timer-btn" id="pauseBtn" disabled>PAUSE</button>
+                    <button class="timer-btn" id="resetBtn">RESET</button>
+                </div>
+                <div class="timer-info">
+                    <div class="focus-label">CURRENT SUBJECT:</div>
+                    <div class="focus-title empty" id="currentFocus">— 未選択 —</div>
+                </div>
+            </div>
+        </section>
+
+        <section class="section">
+            <div class="task-header">
+                <div class="section-label">FILE: 01-SUBJECTS</div>
+                <button class="add-btn" id="addTaskBtn"><i class="fas fa-plus"></i> NEW</button>
+            </div>
+            <div class="search-parameters">
+                <div class="search-label">SEARCH-PARAMETERS:</div>
+                <div class="tag-container" id="categoryFilters"></div>
+                <button class="tag-btn tag-clear" id="clearFilters">CLEAR</button>
+            </div>
+            <div class="task-grid" id="taskGrid"></div>
+            <div class="empty" id="emptyTasks" style="display:none;"><i class="fas fa-book-open"></i> アーカイブする物語がありません
+            </div>
+        </section>
+
+        <section class="section">
+            <div class="section-label">FILE: 02-DATABASE</div>
+            <div class="filters">
+                <select class="filter-select" id="archiveView" onchange="app.archiveView = this.value; app.render()">
+                    <option value="archive">ARCHIVE</option>
+                    <option value="logs">LOGS</option>
+                </select>
+                <select class="filter-select" id="filterCategory">
+                    <option value="">ALL CATEGORIES</option>
+                </select>
+                <select class="filter-select" id="filterDate">
+                    <option value="">ALL TIME</option>
+                    <option value="today">TODAY</option>
+                    <option value="week">WEEK</option>
+                    <option value="month">MONTH</option>
+                </select>
+            </div>
+            <div class="archive-list" id="archiveList"></div>
+            <div class="empty" id="emptyArchive" style="display:none;"><i class="fas fa-archive"></i> 完了した記録はありません</div>
+        </section>
+
+        <section class="section">
+            <div class="section-label">FILE: 99-SYSTEM</div>
+            <div class="system-grid">
+                <div class="system-card">
+                    <div class="system-card-title">TIMER</div>
+                    <div class="setting-row"><span>作業（分）</span><input type="number" class="setting-input"
+                            id="workDuration" value="25" min="1" max="60"></div>
+                    <div class="setting-row"><span>短休憩</span><input type="number" class="setting-input" id="shortBreak"
+                            value="5" min="1" max="30"></div>
+                    <div class="setting-row"><span>長休憩</span><input type="number" class="setting-input" id="longBreak"
+                            value="15" min="1" max="60"></div>
+                    <button class="sys-btn" id="saveSettings">SAVE</button>
+                </div>
+                <div class="system-card">
+                    <div class="system-card-title">NOTIFY</div>
+                    <div class="setting-row"><span>通知音</span><select class="setting-input" id="soundEnabled"
+                            style="width:auto;">
+                            <option value="1">ON</option>
+                            <option value="0">OFF</option>
+                        </select></div>
+                    <button class="sys-btn" id="requestNotification">ENABLE</button>
+                </div>
+                <div class="system-card">
+                    <div class="system-card-title">DATA</div>
+                    <button class="sys-btn" id="exportData">EXPORT</button>
+                    <button class="sys-btn danger" id="clearData">CLEAR ALL</button>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <div class="modal-overlay" id="taskModal">
+        <div class="modal">
+            <div class="modal-header">
+                <span class="modal-title" id="modalTitle">NEW ENTRY</span>
+                <button class="modal-close" id="modalClose"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="taskForm">
+                    <input type="hidden" id="taskId">
+                    <div class="form-group">
+                        <label class="form-label">TITLE</label>
+                        <input type="text" class="form-input" id="taskTitle" required placeholder="タスク名">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">DESCRIPTION</label>
+                        <textarea class="form-textarea" id="taskDescription" placeholder="詳細（任意）"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">CATEGORY</label>
+                        <input type="text" class="form-input" id="taskCategory" list="categoryList" placeholder="カテゴリ">
+                        <datalist id="categoryList"></datalist>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">PRIORITY</label>
+                        <select class="form-select" id="taskPriority">
+                            <option value="low">LOW</option>
+                            <option value="medium" selected>MEDIUM</option>
+                            <option value="high">HIGH</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">DUE DATE</label>
+                        <input type="date" class="form-input" id="taskDueDate">
+                        <div class="form-hint" id="taskDueWeekday"></div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">URL</label>
+                        <div style="display: flex; gap: 0.3rem;">
+                            <input type="url" class="form-input" id="taskUrl" placeholder="https://...">
+                            <button type="button" class="form-btn secondary" id="openUrlBtn" disabled
+                                title="Valid URL required">🔗</button>
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="form-btn secondary" id="cancelTask">CANCEL</button>
+                        <button type="submit" class="form-btn primary">SAVE</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        class DB { constructor() { this.name = 'ArchivePomodoroDB'; this.ver = 2; this.db = null } async init() { return new Promise((res, rej) => { const r = indexedDB.open(this.name, this.ver); r.onerror = () => rej(r.error); r.onsuccess = () => { this.db = r.result; res(this.db) }; r.onupgradeneeded = e => { const d = e.target.result; if (!d.objectStoreNames.contains('tasks')) { const s = d.createObjectStore('tasks', { keyPath: 'id', autoIncrement: true }); s.createIndex('completed', 'completed', { unique: false }) } if (!d.objectStoreNames.contains('settings')) d.createObjectStore('settings', { keyPath: 'key' }); if (!d.objectStoreNames.contains('logs')) { const l = d.createObjectStore('logs', { keyPath: 'id', autoIncrement: true }); l.createIndex('endedAt', 'endedAt', { unique: false }); l.createIndex('category', 'category', { unique: false }); l.createIndex('taskId', 'taskId', { unique: false }) } } }) } async getAll(s) { return new Promise((res, rej) => { const t = this.db.transaction(s, 'readonly').objectStore(s).getAll(); t.onerror = () => rej(t.error); t.onsuccess = () => res(t.result) }) } async get(s, k) { return new Promise((res, rej) => { const t = this.db.transaction(s, 'readonly').objectStore(s).get(k); t.onerror = () => rej(t.error); t.onsuccess = () => res(t.result) }) } async add(s, d) { return new Promise((res, rej) => { const t = this.db.transaction(s, 'readwrite').objectStore(s).add(d); t.onerror = () => rej(t.error); t.onsuccess = () => res(t.result) }) } async put(s, d) { return new Promise((res, rej) => { const t = this.db.transaction(s, 'readwrite').objectStore(s).put(d); t.onerror = () => rej(t.error); t.onsuccess = () => res(t.result) }) } async del(s, k) { return new Promise((res, rej) => { const t = this.db.transaction(s, 'readwrite').objectStore(s).delete(k); t.onerror = () => rej(t.error); t.onsuccess = () => res(t.result) }) } async clear(s) { return new Promise((res, rej) => { const t = this.db.transaction(s, 'readwrite').objectStore(s).clear(); t.onerror = () => rej(t.error); t.onsuccess = () => res(t.result) }) } }
+
+        class Timer { constructor(tick, done, state) { this.S = { WORK: 'WORK', SHORT: 'SHORT BREAK', LONG: 'LONG BREAK' }; this.cur = this.S.WORK; this.cnt = 0; this.cfg = { work: 25, short: 5, long: 15 }; this.rem = this.cfg.work * 60; this.tot = this.rem; this.run = false; this.iv = null; this.tick = tick; this.done = done; this.state = state } set(c) { this.cfg = { ...this.cfg, ...c }; if (!this.run) this.reset() } start() { if (this.run) return; this.run = true; this.iv = setInterval(() => this._tick(), 1000) } pause() { this.run = false; if (this.iv) { clearInterval(this.iv); this.iv = null } } reset() { this.pause(); this.cur = this.S.WORK; this.rem = this.cfg.work * 60; this.tot = this.rem; this.tick(this.rem, this.tot); this.state(this.cur) } _tick() { this.rem--; this.tick(this.rem, this.tot); if (this.rem <= 0) this._done() } _done() { this.pause(); if (this.cur === this.S.WORK) { this.cnt++; this.done(true); this.cur = this.cnt % 4 === 0 ? this.S.LONG : this.S.SHORT; this.rem = (this.cnt % 4 === 0 ? this.cfg.long : this.cfg.short) * 60 } else { this.cur = this.S.WORK; this.rem = this.cfg.work * 60; this.done(false) } this.tot = this.rem; this.state(this.cur); this.tick(this.rem, this.tot) } }
+
+        class App {
+            constructor() { this.db = new DB(); this.timer = null; this.focus = null; this.tasks = []; this.cats = new Set(); this.audio = null; this.phaseStartedAt = null; this.archiveView = 'archive'; this.filterCategories = new Set(); } async init() { await this.db.init(); await this.loadCfg(); await this.loadTasks(); this.initTimer(); this.bind(); this.render() } initTimer() { this.timer = new Timer((r, t) => this.updTimer(r, t), w => this.onDone(w), s => this.onState(s)) } async loadCfg() { const w = await this.db.get('settings', 'work'), s = await this.db.get('settings', 'short'), l = await this.db.get('settings', 'long'), snd = await this.db.get('settings', 'sound'); document.getElementById('workDuration').value = w?.value || 25; document.getElementById('shortBreak').value = s?.value || 5; document.getElementById('longBreak').value = l?.value || 15; document.getElementById('soundEnabled').value = snd?.value ?? 1; if (this.timer) this.timer.set({ work: w?.value || 25, short: s?.value || 5, long: l?.value || 15 }) } async loadTasks() { this.tasks = await this.db.getAll('tasks'); this.cats.clear(); this.tasks.forEach(t => { if (t.category) this.cats.add(t.category) }) }
+            async unDoneTask(id) {
+                const t = this.tasks.find(x => x.id === id);
+                if (!t) return;
+                t.completed = false;
+                t.completedAt = null;
+                await this.db.put('tasks', t);
+                if (this.focus === id) {
+                    this.focus = null;
+                    this.updFocus();
+                }
+                await this.loadTasks();
+                this.render();
+                this.toast('復帰しました');
+            }
+            bind() { document.getElementById('startBtn').onclick = () => this.start(); document.getElementById('pauseBtn').onclick = () => this.pause(); document.getElementById('resetBtn').onclick = () => this.reset(); document.getElementById('addTaskBtn').onclick = () => this.openModal(); document.getElementById('modalClose').onclick = () => this.closeModal(); document.getElementById('cancelTask').onclick = () => this.closeModal(); document.getElementById('taskForm').onsubmit = e => this.submit(e); document.getElementById('taskDueDate').onchange = () => this.updateDueHint(); document.getElementById('taskDueDate').oninput = () => this.updateDueHint(); document.getElementById('taskModal').onclick = e => { if (e.target.id === 'taskModal') this.closeModal() }; document.getElementById('filterCategory').onchange = () => this.render(); document.getElementById('filterDate').onchange = () => this.render(); document.getElementById('clearFilters').onclick = () => this.clearFilters(); document.getElementById('saveSettings').onclick = () => this.saveCfg(); document.getElementById('requestNotification').onclick = () => this.reqNotify(); document.getElementById('exportData').onclick = () => this.export(); document.getElementById('clearData').onclick = () => this.clearAll() } start() { this.timer.start(); if (!this.phaseStartedAt && this.timer.cur === 'WORK') { this.phaseStartedAt = new Date().toISOString() } document.getElementById('startBtn').disabled = true; document.getElementById('pauseBtn').disabled = false } pause() { this.timer.pause(); document.getElementById('startBtn').disabled = false; document.getElementById('pauseBtn').disabled = true } reset() { this.timer.reset(); this.phaseStartedAt = null; document.getElementById('startBtn').disabled = false; document.getElementById('pauseBtn').disabled = true } updTimer(r, t) { const m = Math.floor(r / 60), s = r % 60; document.getElementById('timerDisplay').textContent = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`; const c = 2 * Math.PI * 65, o = c * (1 - r / t); document.getElementById('timerProgress').style.strokeDashoffset = o } onState(s) { const el = document.getElementById('timerState'), pg = document.getElementById('timerProgress'); el.textContent = s; if (s !== 'WORK') { el.classList.add('break'); pg.classList.add('break') } else { el.classList.remove('break'); pg.classList.remove('break') } } async onDone(w) { if (w && this.focus) { const t = this.tasks.find(x => x.id === this.focus); if (t) { t.pomodoroCount = (t.pomodoroCount || 0) + 1; await this.db.put('tasks', t); this.render() } if (this.phaseStartedAt) { const cfg = await this.db.get('settings', 'work'); const durationMin = (cfg?.value || 25); await this.db.add('logs', { taskId: this.focus, startedAt: this.phaseStartedAt, endedAt: new Date().toISOString(), durationMin: durationMin, category: t?.category || '' }); this.phaseStartedAt = null } } else { if (w && !this.phaseStartedAt) { this.phaseStartedAt = new Date().toISOString() } } this.beep(); this.notify(w ? '作業完了！' : '休憩終了！', w ? '休憩を取りましょう' : '作業を再開しましょう'); this.toast(w ? 'セッション完了！' : '休憩終了！') } openModal(id = null) { const m = document.getElementById('taskModal'), f = document.getElementById('taskForm'), t = document.getElementById('modalTitle'), dl = document.getElementById('categoryList'); dl.innerHTML = ''; this.cats.forEach(c => { const o = document.createElement('option'); o.value = c; dl.appendChild(o) }); if (id) { const x = this.tasks.find(t => t.id === id); if (x) { t.textContent = 'EDIT'; document.getElementById('taskId').value = x.id; document.getElementById('taskTitle').value = x.title; document.getElementById('taskDescription').value = x.description || ''; document.getElementById('taskCategory').value = x.category || ''; document.getElementById('taskPriority').value = x.priority || 'medium'; document.getElementById('taskDueDate').value = x.dueDate || ''; document.getElementById('taskUrl').value = x.linkUrl || ''; this.updateDueHint() } } else { t.textContent = 'NEW ENTRY'; f.reset(); document.getElementById('taskId').value = ''; const dd = new Date(); dd.setDate(dd.getDate() + 7); document.getElementById('taskDueDate').value = dd.toISOString().slice(0, 10); this.updateDueHint() } m.classList.add('active') } closeModal() { document.getElementById('taskModal').classList.remove('active') } async submit(e) { e.preventDefault(); const id = document.getElementById('taskId').value; const d = { title: document.getElementById('taskTitle').value, description: document.getElementById('taskDescription').value, category: document.getElementById('taskCategory').value, priority: document.getElementById('taskPriority').value, dueDate: document.getElementById('taskDueDate').value, completed: false, pomodoroCount: 0, createdAt: new Date().toISOString() }; if (id) { const ex = this.tasks.find(t => t.id === parseInt(id)); d.id = parseInt(id); d.pomodoroCount = ex?.pomodoroCount || 0; d.createdAt = ex?.createdAt || d.createdAt; await this.db.put('tasks', d); this.toast('更新しました') } else { await this.db.add('tasks', d); this.toast('追加しました') } await this.loadTasks(); this.render(); this.closeModal() } async delTask(id) { if (confirm('削除しますか？')) { await this.db.del('tasks', id); if (this.focus === id) { this.focus = null; this.updFocus() } await this.loadTasks(); this.render(); this.toast('削除しました') } } async doneTask(id) { const t = this.tasks.find(x => x.id === id); if (t) { t.completed = true; t.completedAt = new Date().toISOString(); await this.db.put('tasks', t); if (this.focus === id) { this.focus = null; this.updFocus() } await this.loadTasks(); this.render(); this.toast('アーカイブしました') } } focusTask(id) { if (this.focus === id) { this.focus = null; } else { this.focus = id; } this.updFocus(); this.render() } updFocus() { const el = document.getElementById('currentFocus'); if (this.focus) { const t = this.tasks.find(x => x.id === this.focus); if (t) { el.textContent = t.title; el.classList.remove('empty') } } else { el.textContent = '— 未選択 —'; el.classList.add('empty') } } async saveCfg() { const c = { work: parseInt(document.getElementById('workDuration').value), short: parseInt(document.getElementById('shortBreak').value), long: parseInt(document.getElementById('longBreak').value), sound: parseInt(document.getElementById('soundEnabled').value) }; await this.db.put('settings', { key: 'work', value: c.work }); await this.db.put('settings', { key: 'short', value: c.short }); await this.db.put('settings', { key: 'long', value: c.long }); await this.db.put('settings', { key: 'sound', value: c.sound }); this.timer.set(c); this.toast('保存しました') } async reqNotify() { if ('Notification' in window) { const p = await Notification.requestPermission(); this.toast(p === 'granted' ? '通知ON' : '通知OFF') } else this.toast('非対応') } notify(t, b) { if ('Notification' in window && Notification.permission === 'granted') new Notification(t, { body: b }) } beep() { if (document.getElementById('soundEnabled').value === '0') return; if (!this.audio) this.audio = new (window.AudioContext || window.webkitAudioContext)(); const o = this.audio.createOscillator(), g = this.audio.createGain(); o.connect(g); g.connect(this.audio.destination); o.frequency.value = 800; o.type = 'sine'; g.gain.setValueAtTime(0.3, this.audio.currentTime); g.gain.exponentialRampToValueAtTime(0.01, this.audio.currentTime + 0.5); o.start(); o.stop(this.audio.currentTime + 0.5) } async export() { const d = { tasks: this.tasks, at: new Date().toISOString() }; const b = new Blob([JSON.stringify(d, null, 2)], { type: 'application/json' }); const u = URL.createObjectURL(b); const a = document.createElement('a'); a.href = u; a.download = `pomodoro-${new Date().toISOString().split('T')[0]}.json`; a.click(); URL.revokeObjectURL(u); this.toast('エクスポートしました') } async clearAll() { if (confirm('全データを削除しますか？')) { await this.db.clear('tasks'); await this.db.clear('settings'); this.tasks = []; this.cats.clear(); this.focus = null; this.updFocus(); this.render(); this.toast('削除しました') } } render() { this.renderTasks(); if (this.archiveView === 'logs') { this.renderLogs() } else { this.renderArchive() } this.renderCats() } icon(c) { const m = { '仕事': 'fa-briefcase', '勉強': 'fa-graduation-cap', '読書': 'fa-book', '運動': 'fa-dumbbell', '趣味': 'fa-palette', 'プログラミング': 'fa-code', '会議': 'fa-users', 'メール': 'fa-envelope' }; return m[c] || 'fa-bookmark' } fmtDate(d) { if (!d) return ''; const x = new Date(d); if (Number.isNaN(x.getTime())) return String(d); return x.toLocaleDateString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', weekday: 'short' }) } updateDueHint() { const i = document.getElementById('taskDueDate'), h = document.getElementById('taskDueWeekday'); if (!i || !h) return; if (!i.value) { h.textContent = ''; return } const x = new Date(i.value); if (Number.isNaN(x.getTime())) { h.textContent = ''; return } h.textContent = `WEEKDAY: ${x.toLocaleDateString('ja-JP', { weekday: 'short' })}` } renderTasks() { const g = document.getElementById('taskGrid'), e = document.getElementById('emptyTasks'), a = this.tasks.filter(t => !t.completed); if (!a.length) { g.innerHTML = ''; e.style.display = 'block'; return } e.style.display = 'none'; g.innerHTML = a.map(t => { const od = t.dueDate && new Date(t.dueDate) < new Date(), f = t.id === this.focus; return `<div class="task-card ${f ? 'focused' : ''}" data-id="${t.id}"><div class="task-card-header"><div class="task-thumb"><i class="fas ${this.icon(t.category)}"></i></div><div class="task-info"><div class="task-title">${this.esc(t.title)}</div>${t.category ? `<span class="task-cat">${this.esc(t.category)}</span>` : ''}</div></div><div class="task-meta"><span class="task-pomo"><i class="fas fa-clock"></i> ${t.pomodoroCount || 0}</span>${t.dueDate ? `<span class="task-due ${od ? 'overdue' : ''}">${this.fmtDate(t.dueDate)}</span>` : ''}<span class="priority-${t.priority}"><i class="fas fa-flag"></i></span></div><div class="task-actions"><button class="task-action" onclick="app.focusTask(${t.id})">FOCUS</button><button class="task-action" onclick="app.openModal(${t.id})">EDIT</button><button class="task-action done" onclick="app.doneTask(${t.id})">DONE</button><button class="task-action del" onclick="app.delTask(${t.id})">DEL</button></div></div>` }).join('') } renderArchive() { const l = document.getElementById('archiveList'), e = document.getElementById('emptyArchive'), cf = document.getElementById('filterCategory').value, df = document.getElementById('filterDate').value; let a = this.tasks.filter(t => t.completed); if (cf) a = a.filter(t => t.category === cf); if (df) { const n = new Date(), sd = new Date(n.getFullYear(), n.getMonth(), n.getDate()), sw = new Date(sd); sw.setDate(sw.getDate() - sw.getDay()); const sm = new Date(n.getFullYear(), n.getMonth(), 1); a = a.filter(t => { const c = new Date(t.completedAt); return df === 'today' ? c >= sd : df === 'week' ? c >= sw : df === 'month' ? c >= sm : true }) } if (!a.length) { l.innerHTML = ''; e.style.display = 'block'; return } e.style.display = 'none'; l.innerHTML = a.map((t, i) => `<div class="archive-item"><div class="archive-num">#${String(i + 1).padStart(3, '0')}</div><div class="archive-content"><div class="archive-title">${this.esc(t.title)}</div><div class="archive-meta"><span><i class="fas fa-clock"></i> ${t.pomodoroCount || 0}</span>${t.category ? `<span><i class="fas fa-tag"></i> ${this.esc(t.category)}</span>` : ''}<span><i class="fas fa-calendar-check"></i> ${t.completedAt ? new Date(t.completedAt).toLocaleDateString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', weekday: 'short' }) : ''}</span></div></div></div>`).join('') } renderCats() { const s = document.getElementById('filterCategory'), v = s.value; s.innerHTML = '<option value="">ALL</option>'; this.cats.forEach(c => { const o = document.createElement('option'); o.value = c; o.textContent = c; s.appendChild(o) }); s.value = v } async renderLogs() { const l = document.getElementById('archiveList'), e = document.getElementById('emptyArchive'); const logs = await this.db.getAll('logs'); const sorted = logs.sort((a, b) => new Date(b.endedAt) - new Date(a.endedAt)); if (!sorted.length) { l.innerHTML = ''; e.style.display = 'block'; return } e.style.display = 'none'; l.innerHTML = sorted.map((lg, i) => { const et = new Date(lg.endedAt); const taskTitle = this.tasks.find(t => t.id === lg.taskId)?.title || 'Unknown'; return `<div class="archive-item"><div class="archive-num">#${String(i + 1).padStart(3, '0')}</div><div class="archive-content"><div class="archive-title">${this.esc(taskTitle)}</div><div class="archive-meta"><span><i class="fas fa-hourglass-end"></i> ${lg.durationMin || 0}分</span>${lg.category ? `<span><i class="fas fa-tag"></i> ${this.esc(lg.category)}</span>` : ''}<span><i class="fas fa-calendar-check"></i> ${et.toLocaleDateString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', weekday: 'short' })}</span></div></div></div>` }).join('') } esc(t) { const d = document.createElement('div'); d.textContent = t; return d.innerHTML } toast(m) { const t = document.getElementById('toast'); t.textContent = m; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2500) }
+        }
+
+        window.app = new App(); window.app.init().catch(console.error);
+    </script>
+    <script>
+        // Extend App with view/undo functionality
+        const origOpenModal = window.app.openModal.bind(window.app);
+        window.app.openModal = function (id = null, mode = 'new') {
+            const m = document.getElementById('taskModal'), f = document.getElementById('taskForm'), t = document.getElementById('modalTitle');
+            const isView = mode === 'view';
+            const saveBtn = f.querySelector('[type="submit"]');
+            let undoBtn = document.getElementById('undoTask');
+            const urlEl = document.getElementById('taskUrl');
+            const urlOpenBtn = document.getElementById('openUrlBtn');
+
+            // Call original setup
+            origOpenModal(id);
+
+            // Handle URL field setup
+            if (id) {
+                const x = this.tasks.find(x => x.id === id);
+                if (x) {
+                    if (urlEl) urlEl.value = x.linkUrl || '';
+                    const isArchived = x.completed;
+                    if (isView) {
+                        t.textContent = 'VIEW TASK';
+                        ['taskTitle', 'taskDescription', 'taskCategory', 'taskPriority', 'taskDueDate', 'taskUrl'].forEach(i => {
+                            const el = document.getElementById(i);
+                            if (el) { el.disabled = true; if (el.tagName === 'INPUT') el.readOnly = true }
+                        });
+                    } else {
+                        if (urlEl) { urlEl.disabled = false; urlEl.readOnly = false; }
+                    }
+                    saveBtn.style.display = isView ? 'none' : '';
+                    if (undoBtn) undoBtn.style.display = 'none';
+                    if (isView && isArchived) {
+                        if (!undoBtn) {
+                            undoBtn = document.createElement('button');
+                            undoBtn.type = 'button';
+                            undoBtn.id = 'undoTask';
+                            undoBtn.className = 'form-btn';
+                            undoBtn.textContent = 'UNDO';
+                            undoBtn.style.background = 'var(--success)';
+                            undoBtn.style.borderColor = 'var(--success)';
+                            undoBtn.style.color = 'var(--bg-deep)';
+                            f.querySelector('.form-actions').insertBefore(undoBtn, saveBtn);
+                        }
+                        undoBtn.style.display = '';
+                        undoBtn.onclick = () => { this.unDoneTask(parseInt(document.getElementById('taskId').value)); this.closeModal() };
+                    }
+                }
+            } else {
+                if (urlEl) { urlEl.value = ''; urlEl.disabled = false; }
+                saveBtn.style.display = '';
+                if (undoBtn) undoBtn.style.display = 'none';
+            }
+
+            // Setup URL button functionality for NEW/EDIT mode
+            if (urlEl && urlOpenBtn) {
+                const updateUrlBtn = () => {
+                    const v = urlEl.value;
+                    const isValid = v && (v.startsWith('http://') || v.startsWith('https://'));
+                    urlOpenBtn.disabled = !isValid;
+                    urlOpenBtn.title = isValid ? v : 'Valid URL required';
+                };
+                if (mode !== 'view') {
+                    urlEl.oninput = updateUrlBtn;
+                    urlOpenBtn.type = 'button';
+                    urlOpenBtn.onclick = (e) => { e.preventDefault(); const v = urlEl.value; if (v) window.open(v, '_blank', 'noopener,noreferrer'); };
+                }
+                updateUrlBtn();
+            }
+        };
+
+        const origSubmit = window.app.submit.bind(window.app);
+        window.app.submit = async function (e) {
+            e.preventDefault();
+            const id = document.getElementById('taskId').value;
+            const d = {
+                title: document.getElementById('taskTitle').value,
+                description: document.getElementById('taskDescription').value,
+                category: document.getElementById('taskCategory').value,
+                priority: document.getElementById('taskPriority').value,
+                dueDate: document.getElementById('taskDueDate').value,
+                linkUrl: document.getElementById('taskUrl')?.value || '',
+                completed: false,
+                pomodoroCount: 0,
+                createdAt: new Date().toISOString()
+            };
+            if (id) {
+                const ex = this.tasks.find(t => t.id === parseInt(id));
+                d.id = parseInt(id);
+                d.pomodoroCount = ex?.pomodoroCount || 0;
+                d.createdAt = ex?.createdAt || d.createdAt;
+                d.completed = ex?.completed || false;
+                d.completedAt = ex?.completedAt;
+                d.linkUrl = d.linkUrl || (ex?.linkUrl || '');
+                await this.db.put('tasks', d);
+                this.toast('更新しました');
+            } else {
+                await this.db.add('tasks', d);
+                this.toast('追加しました');
+            }
+            await this.loadTasks();
+            this.render();
+            this.closeModal();
+        };
+
+        // Wire up archive item clicks to open in view mode
+        const origRenderArchive = window.app.renderArchive.bind(window.app);
+        window.app.renderArchive = function () {
+            origRenderArchive();
+            const archiveItems = document.querySelectorAll('.archive-item');
+            archiveItems.forEach(item => {
+                const id = this.tasks.find(t => t.completed)?.id;
+                if (id) item.style.cursor = 'pointer';
+                item.onclick = (e) => {
+                    const num = item.querySelector('.archive-num').textContent;
+                    const idx = parseInt(num.replace('#', '')) - 1;
+                    const completed = this.tasks.filter(t => t.completed);
+                    if (completed[idx]) this.openModal(completed[idx].id, 'view');
+                };
+            });
+        };
+
+        // Override renderTasks to include link icons and category filter
+        const origRenderTasks = window.app.renderTasks.bind(window.app);
+        window.app.renderTasks = function () {
+            const g = document.getElementById('taskGrid'), e = document.getElementById('emptyTasks'), a = this.tasks.filter(t => !t.completed);
+            // Apply category filter (OR condition)
+            let filtered = a;
+            if (this.filterCategories.size > 0) {
+                // If __UNCATEGORIZED__ is selected, include tasks with falsy category
+                const includeUn = this.filterCategories.has('__UNCATEGORIZED__');
+                filtered = a.filter(t => {
+                    if (!t.category) return includeUn;
+                    return this.filterCategories.has(t.category);
+                });
+            }
+            this.renderCategoryFilters(a);
+            if (!filtered.length) { g.innerHTML = ''; e.style.display = 'block'; return }
+            e.style.display = 'none';
+            g.innerHTML = filtered.map(t => {
+                const now = new Date(), f = t.id === this.focus;
+                let dueClass = '';
+                if (t.dueDate) {
+                    const due = new Date(t.dueDate);
+                    const hoursUntil = (due - now) / (1000 * 60 * 60);
+                    if (hoursUntil < 0) dueClass = 'due-overdue';
+                    else if (hoursUntil < 48) dueClass = 'due-soon';
+                }
+                const linkHtml = t.linkUrl ? `<a href="${this.esc(t.linkUrl)}" target="_blank" rel="noopener noreferrer" class="task-link-icon" title="${this.esc(t.linkUrl)}"><i class="fas fa-link"></i></a>` : '';
+                return `<div class="task-card ${f ? 'focused' : ''}" data-id="${t.id}"><div class="task-card-header"><div class="task-thumb"><i class="fas ${this.icon(t.category)}"></i></div><div class="task-info"><div class="task-title">${this.esc(t.title)}${linkHtml}</div>${t.category ? `<span class="task-cat">${this.esc(t.category)}</span>` : ''}</div></div><div class="task-meta"><span class="task-pomo"><i class="fas fa-clock"></i> ${t.pomodoroCount || 0}</span>${t.dueDate ? `<span class="task-due ${dueClass}">${this.fmtDate(t.dueDate)}</span>` : ''}<span class="priority-${t.priority}"><i class="fas fa-flag"></i></span></div><div class="task-actions"><button class="task-action" onclick="app.focusTask(${t.id})">FOCUS</button><button class="task-action" onclick="app.openModal(${t.id})">EDIT</button><button class="task-action done" onclick="app.doneTask(${t.id})">DONE</button><button class="task-action del" onclick="app.delTask(${t.id})">DEL</button></div></div>`
+            }).join('');
+        };
+
+        // Add renderCategoryFilters method
+        window.app.renderCategoryFilters = function (tasks) {
+            const container = document.getElementById('categoryFilters');
+            if (!container) return;
+            // Count categories by frequency (descending), then alphabetically
+            const catCount = {};
+            let uncategorizedCount = 0;
+            tasks.forEach(t => {
+                if (t.category) catCount[t.category] = (catCount[t.category] || 0) + 1;
+                else uncategorizedCount++;
+            });
+            const sorted = Object.entries(catCount).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+            // Render normal categories
+            const parts = sorted.map(([cat]) => {
+                const isActive = this.filterCategories.has(cat);
+                return `<button class="tag-btn ${isActive ? 'active' : ''}" data-cat="${cat}">${cat}</button>`;
+            });
+            // Append UNCATEGORIZED at the end if present
+            if (uncategorizedCount > 0) {
+                const key = '__UNCATEGORIZED__';
+                const isActive = this.filterCategories.has(key);
+                parts.push(`<button class="tag-btn ${isActive ? 'active' : ''}" data-cat="${key}">UNCATEGORIZED</button>`);
+            }
+            container.innerHTML = parts.join('');
+            // Attach click handlers for toggle
+            container.querySelectorAll('.tag-btn').forEach(btn => {
+                btn.onclick = () => {
+                    const cat = btn.dataset.cat;
+                    if (this.filterCategories.has(cat)) {
+                        this.filterCategories.delete(cat);
+                    } else {
+                        this.filterCategories.add(cat);
+                    }
+                    this.render();
+                };
+            });
+        };
+
+        // Add clearFilters method
+        window.app.clearFilters = function () {
+            this.filterCategories.clear();
+            this.render();
+        };
+    </script>
+</body>
+
+</html>
+
+<!-- PATCH-CHECK: 2026-02-04T16:xx -->

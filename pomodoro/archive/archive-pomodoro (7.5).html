@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ARCHIVE: POMODORO</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+
+        :root {
+            --bg-deep: #08080a;
+            --bg-surface: #0c0c10;
+            --bg-elevated: #121218;
+            --bg-card: #0e0e14;
+            --border-dim: #1a1a24;
+            --border-glow: #2a2a38;
+            --text-primary: #ffffff;
+            --text-secondary: #ffffff;
+            --text-muted: #888888;
+            --accent: #00F0FF;
+            --accent-dim: rgba(0, 240, 255, 0.6);
+            --success: #6a6;
+            --danger: #a66;
+            --warning: #aa6;
+            --glow: rgba(0, 240, 255, 0.25);
+            --glow-strong: rgba(0, 240, 255, 0.4);
+            --font: 'Share Tech Mono', monospace;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: var(--font);
+            background: var(--bg-deep);
+            color: var(--text-primary);
+            min-height: 100vh;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        .container { max-width: 1100px; margin: 0 auto; padding: 0.8rem; }
+
+        /* ===== HEADER ===== */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0;
+            margin-bottom: 0.8rem;
+            border-bottom: 1px solid var(--border-dim);
+        }
+        .header-title { font-size: 11px; letter-spacing: 0.3em; color: var(--accent); }
+        .header-status { font-size: 10px; color: var(--success); display: flex; align-items: center; gap: 0.4rem; }
+        .status-dot { width: 5px; height: 5px; background: var(--success); border-radius: 50%; animation: pulse 2s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+        /* ===== SECTION ===== */
+        .section {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-dim);
+            margin-bottom: 0.8rem;
+            padding: 0.8rem;
+        }
+        .section-label {
+            font-size: 9px;
+            letter-spacing: 0.15em;
+            color: var(--accent);
+            margin-bottom: 0.6rem;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+        .section-label::before { content: '◇'; opacity: 0.5; }
+
+        /* ===== TIMER ===== */
+        .timer-section { display: flex; gap: 1.5rem; align-items: center; flex-wrap: wrap; }
+        .timer-display { position: relative; width: 140px; height: 140px; flex-shrink: 0; }
+        .timer-ring { position: absolute; inset: 0; }
+        .timer-ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+        .timer-ring-bg { fill: none; stroke: var(--border-dim); stroke-width: 3; }
+        .timer-ring-progress { fill: none; stroke: var(--accent); stroke-width: 3; stroke-linecap: round; stroke-dasharray: 408; stroke-dashoffset: 0; transition: stroke-dashoffset 0.5s; filter: drop-shadow(0 0 6px var(--glow)); }
+        .timer-ring-progress.break { stroke: var(--success); }
+        .timer-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .timer-time { font-size: 28px; font-weight: 700; letter-spacing: 0.05em; }
+        .timer-state { font-size: 9px; letter-spacing: 0.2em; color: var(--accent); margin-top: 2px; }
+        .timer-state.break { color: var(--success); }
+
+        .timer-controls { display: flex; flex-direction: column; gap: 0.4rem; }
+        .timer-btn {
+            font-family: var(--font);
+            font-size: 10px;
+            letter-spacing: 0.1em;
+            padding: 0.5rem 1.2rem;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-dim);
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .timer-btn:hover { border-color: var(--accent); color: var(--accent); }
+        .timer-btn.primary { background: currentColor; border-color: var(--accent); color: var(--bg-deep); }
+        .timer-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+        .timer-info { flex: 1; min-width: 200px; }
+        .focus-label { font-size: 9px; color: var(--text-muted); margin-bottom: 0.2rem; }
+        .focus-title { font-size: 13px; color: var(--text-primary); padding: 0.4rem 0.6rem; background: var(--bg-elevated); border-left: 2px solid var(--accent); }
+        .focus-title.empty { color: var(--text-muted); font-style: italic; }
+
+        /* ===== TASK GRID ===== */
+        .task-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.6rem; }
+        .add-btn {
+            font-family: var(--font);
+            font-size: 9px;
+            padding: 0.35rem 0.7rem;
+            background: transparent;
+            border: 1px solid var(--accent);
+            color: var(--accent);
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+        .add-btn:hover { background: currentColor; color: var(--bg-deep); }
+
+        .task-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 0.6rem; }
+
+        .task-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-dim);
+            padding: 0.6rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+        .task-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, var(--accent), transparent); opacity: 0; transition: opacity 0.2s; }
+        .task-card:hover { border-color: var(--accent); box-shadow: 0 0 12px var(--glow); }
+        .task-card:hover::before { opacity: 1; }
+        .task-card.focused { border-color: var(--accent); box-shadow: 0 0 15px var(--glow); }
+        .task-card.focused::before { opacity: 1; }
+
+        .task-card-header { display: flex; gap: 0.5rem; align-items: flex-start; margin-bottom: 0.4rem; }
+
+        .task-thumb {
+            width: 36px; height: 36px;
+            background: var(--bg-elevated);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            color: var(--accent);
+            flex-shrink: 0;
+            filter: grayscale(100%);
+            transition: filter 0.3s, box-shadow 0.3s;
+            position: relative;
+        }
+        .task-thumb::before {
+            content: '';
+            position: absolute;
+            inset: -2px;
+            border-radius: 50%;
+            border: 1px solid transparent;
+            border-top-color: var(--accent);
+            border-right-color: var(--accent);
+            opacity: 0.3;
+            animation: spin 4s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .task-card:hover .task-thumb { filter: grayscale(0%); box-shadow: 0 0 10px var(--glow); }
+        .task-card:hover .task-thumb::before { opacity: 0.8; }
+        .task-card.focused .task-thumb { filter: grayscale(0%); box-shadow: 0 0 12px var(--glow); }
+        .task-card.focused .task-thumb::before { opacity: 1; }
+
+        .task-info { flex: 1; min-width: 0; }
+        .task-title { font-size: 11px; font-weight: 700; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .task-cat { font-size: 8px; color: var(--accent); background: rgba(0, 240, 255, 0.1); padding: 1px 4px; display: inline-block; }
+
+        .task-meta { display: flex; justify-content: space-between; font-size: 9px; color: var(--text-muted); margin-top: 0.3rem; }
+        .task-pomo { color: var(--accent); }
+        .task-due.overdue { color: var(--danger); }
+        .priority-high { color: var(--danger); }
+        .priority-medium { color: var(--warning); }
+        .priority-low { color: var(--success); }
+
+        .task-actions { display: flex; gap: 0.3rem; margin-top: 0.4rem; padding-top: 0.4rem; border-top: 1px solid var(--border-dim); }
+        .task-action {
+            font-family: var(--font);
+            font-size: 8px;
+            padding: 0.25rem 0.5rem;
+            background: transparent;
+            border: 1px solid var(--border-dim);
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .task-action:hover { border-color: var(--accent); color: var(--accent); }
+        .task-action.done:hover { border-color: var(--success); color: var(--success); }
+        .task-action.del:hover { border-color: var(--danger); color: var(--danger); }
+
+        .empty { text-align: center; padding: 1.5rem; color: var(--text-muted); font-size: 11px; }
+
+        /* ===== DATABASE ===== */
+        .filters { display: flex; gap: 0.5rem; margin-bottom: 0.6rem; flex-wrap: wrap; }
+        .filter-select {
+            font-family: var(--font);
+            font-size: 9px;
+            padding: 0.3rem 0.6rem;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-dim);
+            color: var(--text-primary);
+            cursor: pointer;
+        }
+        .filter-select:focus { outline: none; border-color: var(--accent); }
+
+        .archive-list { display: flex; flex-direction: column; gap: 0.3rem; }
+        .archive-item {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            padding: 0.5rem;
+            background: var(--bg-elevated);
+            border-left: 2px solid var(--accent);
+            transition: all 0.2s;
+        }
+        .archive-item:hover { background: var(--bg-card); }
+        .archive-num { font-size: 9px; color: var(--text-muted); min-width: 30px; }
+        .archive-content { flex: 1; }
+        .archive-title { font-size: 11px; }
+        .archive-meta { font-size: 9px; color: var(--text-muted); display: flex; gap: 0.8rem; }
+
+        /* ===== SYSTEM ===== */
+        .system-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 0.6rem; }
+        .system-card { background: var(--bg-elevated); border: 1px solid var(--border-dim); padding: 0.6rem; }
+        .system-card-title { font-size: 9px; color: var(--text-muted); margin-bottom: 0.5rem; letter-spacing: 0.1em; }
+        .setting-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem; font-size: 10px; }
+        .setting-input {
+            font-family: var(--font);
+            font-size: 10px;
+            width: 50px;
+            padding: 0.2rem;
+            background: var(--bg-surface);
+            border: 1px solid var(--border-dim);
+            color: var(--text-primary);
+            text-align: center;
+        }
+        .setting-input:focus { outline: none; border-color: var(--accent); }
+        .sys-btn {
+            width: 100%;
+            font-family: var(--font);
+            font-size: 9px;
+            padding: 0.4rem;
+            background: var(--bg-surface);
+            border: 1px solid var(--border-dim);
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 0.3rem;
+        }
+        .sys-btn:hover { border-color: var(--accent); color: var(--accent); }
+        .sys-btn.danger:hover { border-color: var(--danger); color: var(--danger); }
+
+        /* ===== MODAL ===== */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s;
+        }
+        .modal-overlay.active { opacity: 1; visibility: visible; }
+        .modal {
+            background: var(--bg-surface);
+            border: 1px solid var(--accent);
+            width: 90%;
+            max-width: 360px;
+            max-height: 85vh;
+            overflow-y: auto;
+        }
+        .modal-header {
+            padding: 0.6rem 0.8rem;
+            border-bottom: 1px solid var(--border-dim);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .modal-title { font-size: 10px; letter-spacing: 0.15em; color: var(--accent); }
+        .modal-close { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 14px; }
+        .modal-close:hover { color: var(--text-primary); }
+        .modal-body { padding: 0.8rem; }
+        .form-group { margin-bottom: 0.6rem; }
+        .form-label { display: block; font-size: 9px; color: var(--text-muted); margin-bottom: 0.2rem; }
+        .form-hint { margin-top: 0.25rem; font-size: 10px; color: var(--text-muted); font-family: var(--font-mono); letter-spacing: 0.08em; }
+        .form-input, .form-select, .form-textarea {
+            width: 100%;
+            font-family: var(--font);
+            font-size: 11px;
+            padding: 0.5rem;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-dim);
+            color: var(--text-primary);
+        }
+        .form-input:focus, .form-select:focus, .form-textarea:focus { outline: none; border-color: var(--accent); }
+        .form-textarea { min-height: 60px; resize: vertical; }
+        .form-actions { display: flex; gap: 0.5rem; margin-top: 0.8rem; }
+        .form-btn {
+            flex: 1;
+            font-family: var(--font);
+            font-size: 10px;
+            padding: 0.5rem;
+            border: 1px solid var(--border-dim);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .form-btn.primary { background: currentColor; border-color: var(--accent); color: var(--bg-deep); }
+        .form-btn.secondary { background: transparent; color: var(--text-primary); }
+        .form-btn.secondary:hover { border-color: var(--text-primary); }
+
+        .toast {
+            position: fixed;
+            bottom: 1rem; right: 1rem;
+            padding: 0.5rem 1rem;
+            background: var(--bg-elevated);
+            border: 1px solid var(--accent);
+            color: var(--text-primary);
+            font-size: 10px;
+            transform: translateY(60px);
+            opacity: 0;
+            transition: all 0.2s;
+            z-index: 2000;
+        }
+        .toast.show { transform: translateY(0); opacity: 1; }
+
+        @media (max-width: 600px) {
+            .timer-section { flex-direction: column; align-items: stretch; }
+            .timer-display { margin: 0 auto; }
+            .timer-controls { flex-direction: row; justify-content: center; }
+            .task-grid { grid-template-columns: 1fr; }
+        }
+    
+        /* Accent palette */
+        .header-title { color: #ffffff; }
+        .header-status { color: var(--accent); }
+        .status-dot { background: currentColor; box-shadow: 0 0 10px var(--glow-strong); }
+
+        .form-btn.danger {
+            border-color: var(--danger);
+            color: var(--danger);
+        }
+        .form-btn.danger:hover {
+            box-shadow: 0 0 18px rgba(170, 102, 102, 0.25);
+        }
+
+        .palette { display:flex; gap:10px; margin-top:12px; flex-wrap:wrap; }
+        .swatch {
+            width: 26px; height: 26px; border-radius: 6px;
+            border: 1px solid var(--border-dim);
+            background: transparent;
+            cursor:pointer;
+            position: relative;
+        }
+        .swatch::after{
+            content:"";
+            position:absolute; inset:4px;
+            border-radius:4px;
+            background: currentColor;
+            box-shadow: 0 0 12px var(--glow);
+        }
+        .swatch:focus { outline:2px solid var(--accent); outline-offset:2px; }
+
+        /* Stronger focus */
+        .task-card.focused {
+            border-color: var(--accent);
+            box-shadow: 0 0 22px var(--glow-strong);
+        }
+        .task-card.focused::before { opacity: 0.55; }
+        .current-task.focused {
+            border-color: var(--accent);
+            box-shadow: 0 0 18px var(--glow-strong);
+        }
+</style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="header-title">ARCHIVE: POMODORO</div>
+            <div class="header-status"><span class="status-dot"></span><span id="sysText">ONLINE</span></div>
+        </header>
+
+        <section class="section">
+            <div class="section-label">FILE: 00-CHRONOMETER</div>
+            <div class="timer-section">
+                <div class="timer-display">
+                    <div class="timer-ring">
+                        <svg viewBox="0 0 140 140">
+                            <circle class="timer-ring-bg" cx="70" cy="70" r="65"/>
+                            <circle class="timer-ring-progress" id="timerProgress" cx="70" cy="70" r="65"/>
+                        </svg>
+                    </div>
+                    <div class="timer-center">
+                        <div class="timer-time" id="timerDisplay">25:00</div>
+                        <div class="timer-state" id="timerState">WORK</div>
+                    </div>
+                </div>
+                <div class="timer-controls">
+                    <button class="timer-btn primary" id="startBtn">START</button>
+                    <button class="timer-btn" id="pauseBtn" disabled>PAUSE</button>
+                    <button class="timer-btn" id="resetBtn">RESET</button>
+                </div>
+                <div class="timer-info">
+                    <div class="focus-label">CURRENT SUBJECT:</div>
+                    <div class="focus-title empty" id="currentFocus">— 未選択 —</div>
+                </div>
+            </div>
+        </section>
+
+        <section class="section">
+            <div class="task-header">
+                <div class="section-label">FILE: 01-SUBJECTS</div>
+                <button class="add-btn" id="addTaskBtn"><i class="fas fa-plus"></i> NEW</button>
+            </div>
+            <div class="task-grid" id="taskGrid"></div>
+            <div class="empty" id="emptyTasks" style="display:none;"><i class="fas fa-book-open"></i> アーカイブする物語がありません</div>
+        </section>
+
+        <section class="section">
+            <div class="section-label">FILE: 02-DATABASE</div>
+            <div class="filters">
+                <select class="filter-select" id="filterCategory"><option value="">ALL CATEGORIES</option></select>
+                <select class="filter-select" id="filterDate">
+                    <option value="">ALL TIME</option>
+                    <option value="today">TODAY</option>
+                    <option value="week">WEEK</option>
+                    <option value="month">MONTH</option>
+                </select>
+            </div>
+            <div class="archive-list" id="archiveList"></div>
+            <div class="empty" id="emptyArchive" style="display:none;"><i class="fas fa-archive"></i> 完了した記録はありません</div>
+        </section>
+
+        <section class="section">
+            <div class="section-label">FILE: 99-SYSTEM</div>
+            <div class="system-grid">
+                <div class="system-card">
+                    <div class="system-card-title">TIMER</div>
+                    <div class="setting-row"><span>作業（分）</span><input type="number" class="setting-input" id="workDuration" value="25" min="1" max="60"></div>
+                    <div class="setting-row"><span>短休憩</span><input type="number" class="setting-input" id="shortBreak" value="5" min="1" max="30"></div>
+                    <div class="setting-row"><span>長休憩</span><input type="number" class="setting-input" id="longBreak" value="15" min="1" max="60"></div>
+                    <button class="sys-btn" id="saveSettings">SAVE</button>
+                </div>
+                <div class="system-card">
+                    <div class="system-card-title">NOTIFY</div>
+                    <div class="setting-row"><span>通知音</span><select class="setting-input" id="soundEnabled" style="width:auto;"><option value="1">ON</option><option value="0">OFF</option></select></div>
+                    <button class="sys-btn" id="requestNotification">ENABLE</button>
+                </div>
+                <div class="system-card">
+                    <div class="system-card-title">DATA</div>
+                    <button class="sys-btn" id="exportData">EXPORT</button>
+                    <button class="sys-btn danger" id="clearData">CLEAR ALL</button>
+                </div>
+            
+                <div class="system-card">
+                    <div class="system-card-title">THEME</div>
+                    <div class="system-card-desc">アクセントカラーを選択（保存されます）</div>
+                    <div class="palette" id="accentPalette">
+                        <button class="swatch" data-accent="#00F0FF" aria-label="Cyan"></button>
+                        <button class="swatch" data-accent="#7DFF6A" aria-label="Lime"></button>
+                        <button class="swatch" data-accent="#FF4FD8" aria-label="Magenta"></button>
+                        <button class="swatch" data-accent="#7A5CFF" aria-label="Violet"></button>
+                        <button class="swatch" data-accent="#FFB400" aria-label="Amber"></button>
+                    </div>
+                </div>
+</div>
+        </section>
+    </div>
+
+    <div class="modal-overlay" id="taskModal">
+        <div class="modal">
+            <div class="modal-header">
+                <span class="modal-title" id="modalTitle">NEW ENTRY</span>
+                <button class="modal-close" id="modalClose"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="taskForm">
+                    <input type="hidden" id="taskId">
+                    <div class="form-group">
+                        <label class="form-label">TITLE</label>
+                        <input type="text" class="form-input" id="taskTitle" required placeholder="タスク名">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">DESCRIPTION</label>
+                        <textarea class="form-textarea" id="taskDescription" placeholder="詳細（任意）"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">CATEGORY</label>
+                        <input type="text" class="form-input" id="taskCategory" list="categoryList" placeholder="カテゴリ">
+                        <datalist id="categoryList"></datalist>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">PRIORITY</label>
+                        <select class="form-select" id="taskPriority">
+                            <option value="low">LOW</option>
+                            <option value="medium" selected>MEDIUM</option>
+                            <option value="high">HIGH</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">DUE DATE</label>
+                        <input type="date" class="form-input" id="taskDueDate">
+                    <div class="form-hint" id="taskDueWeekday"></div>
+</div>
+                    <div class="form-actions">
+    <button type="button" class="form-btn secondary" id="undoTask" style="display:none;">UNDO</button>
+    <button type="button" class="form-btn danger" id="deleteTask" style="display:none;">DELETE</button>
+    <button type="button" class="form-btn secondary" id="cancelTask">CANCEL</button>
+    <button type="submit" class="form-btn primary" id="saveTask">SAVE</button>
+</div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+
+        const ACCENTS = [
+            { name: "Cyan", hex: "#00F0FF" },
+            { name: "Lime", hex: "#7DFF6A" },
+            { name: "Magenta", hex: "#FF4FD8" },
+            { name: "Violet", hex: "#7A5CFF" },
+            { name: "Amber", hex: "#FFB400" },
+        ];
+
+        function hexToRgb(hex){
+            const h = hex.replace("#","").trim();
+            const full = h.length===3 ? h.split("").map(c=>c+c).join("") : h;
+            const n = parseInt(full, 16);
+            if(Number.isNaN(n)) return [0,240,255];
+            return [(n>>16)&255, (n>>8)&255, n&255];
+        }
+
+        function applyAccent(hex){
+            const [r,g,b] = hexToRgb(hex);
+            const root = document.documentElement;
+            root.style.setProperty("--accent", hex);
+            root.style.setProperty("--accent-dim", `rgba(${r}, ${g}, ${b}, 0.6)`);
+            root.style.setProperty("--glow", `rgba(${r}, ${g}, ${b}, 0.25)`);
+            root.style.setProperty("--glow-strong", `rgba(${r}, ${g}, ${b}, 0.4)`);
+            // Update palette swatches color blocks
+            document.querySelectorAll("#accentPalette .swatch").forEach(btn=>{
+                const c = btn.dataset.accent;
+                btn.style.setProperty("--accent", c);
+                btn.style.color = c;
+                // use after pseudo background via inline variable:
+                btn.style.setProperty("--swatch", c);
+            });
+        }
+
+
+    class DB{constructor(){this.name='ArchivePomodoroDB';this.ver=1;this.db=null}async init(){return new Promise((res,rej)=>{const r=indexedDB.open(this.name,this.ver);r.onerror=()=>rej(r.error);r.onsuccess=()=>{this.db=r.result;res(this.db)};r.onupgradeneeded=e=>{const d=e.target.result;if(!d.objectStoreNames.contains('tasks')){const s=d.createObjectStore('tasks',{keyPath:'id',autoIncrement:true});s.createIndex('completed','completed',{unique:false})}if(!d.objectStoreNames.contains('settings'))d.createObjectStore('settings',{keyPath:'key'})}})}async getAll(s){return new Promise((res,rej)=>{const t=this.db.transaction(s,'readonly').objectStore(s).getAll();t.onerror=()=>rej(t.error);t.onsuccess=()=>res(t.result)})}async get(s,k){return new Promise((res,rej)=>{const t=this.db.transaction(s,'readonly').objectStore(s).get(k);t.onerror=()=>rej(t.error);t.onsuccess=()=>res(t.result)})}async add(s,d){return new Promise((res,rej)=>{const t=this.db.transaction(s,'readwrite').objectStore(s).add(d);t.onerror=()=>rej(t.error);t.onsuccess=()=>res(t.result)})}async put(s,d){return new Promise((res,rej)=>{const t=this.db.transaction(s,'readwrite').objectStore(s).put(d);t.onerror=()=>rej(t.error);t.onsuccess=()=>res(t.result)})}async del(s,k){return new Promise((res,rej)=>{const t=this.db.transaction(s,'readwrite').objectStore(s).delete(k);t.onerror=()=>rej(t.error);t.onsuccess=()=>res(t.result)})}async clear(s){return new Promise((res,rej)=>{const t=this.db.transaction(s,'readwrite').objectStore(s).clear();t.onerror=()=>rej(t.error);t.onsuccess=()=>res(t.result)})}}
+
+    class Timer{constructor(tick,done,state){this.S={WORK:'WORK',SHORT:'SHORT BREAK',LONG:'LONG BREAK'};this.cur=this.S.WORK;this.cnt=0;this.cfg={work:25,short:5,long:15};this.rem=this.cfg.work*60;this.tot=this.rem;this.run=false;this.iv=null;this.tick=tick;this.done=done;this.state=state}set(c){this.cfg={...this.cfg,...c};if(!this.run)this.reset()}start(){if(this.run)return;this.run=true;this.iv=setInterval(()=>this._tick(),1000)}pause(){this.run=false;if(this.iv){clearInterval(this.iv);this.iv=null}}reset(){this.pause();this.cur=this.S.WORK;this.rem=this.cfg.work*60;this.tot=this.rem;this.tick(this.rem,this.tot);this.state(this.cur)}_tick(){this.rem--;this.tick(this.rem,this.tot);if(this.rem<=0)this._done()}_done(){this.pause();if(this.cur===this.S.WORK){this.cnt++;this.done(true);this.cur=this.cnt%4===0?this.S.LONG:this.S.SHORT;this.rem=(this.cnt%4===0?this.cfg.long:this.cfg.short)*60}else{this.cur=this.S.WORK;this.rem=this.cfg.work*60;this.done(false)}this.tot=this.rem;this.state(this.cur);this.tick(this.rem,this.tot)}}
+
+    class App{constructor(){this.db=new DB();this.timer=null;this.focus=null;this.tasks=[];this.cats=new Set();this.audio=null}async init(){await this.db.init();await this.loadCfg();
+            // Apply saved accent
+            const a = await this.db.get('settings','accent');
+            if(a && a.value){ applyAccent(a.value); } else { applyAccent(getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#00F0FF'); }
+            // Initialize swatch visuals
+            document.querySelectorAll('#accentPalette .swatch').forEach(btn=>{ btn.style.setProperty('--accent', btn.dataset.accent); btn.style.color = btn.dataset.accent; btn.style.setProperty('--swatch', btn.dataset.accent); btn.style.setProperty('--swatch', btn.dataset.accent); btn.style.setProperty('--swatch', btn.dataset.accent); btn.style.setProperty('--swatch', btn.dataset.accent); });await this.loadTasks();
+            await this.loadLogs();this.initTimer();this.bind();this.render()}initTimer(){this.timer=new Timer((r,t)=>this.updTimer(r,t),w=>this.onDone(w),s=>this.onState(s))}async loadCfg(){const w=await this.db.get('settings','work'),s=await this.db.get('settings','short'),l=await this.db.get('settings','long'),snd=await this.db.get('settings','sound');document.getElementById('workDuration').value=w?.value||25;document.getElementById('shortBreak').value=s?.value||5;document.getElementById('longBreak').value=l?.value||15;document.getElementById('soundEnabled').value=snd?.value??1;if(this.timer)this.timer.set({work:w?.value||25,short:s?.value||5,long:l?.value||15})}async loadTasks(){this.tasks=await this.db.getAll('tasks');this.cats.clear();this.tasks.forEach(t=>{if(t.category)this.cats.add(t.category)})}bind(){document.getElementById('startBtn').onclick=()=>this.start();document.getElementById('pauseBtn').onclick=()=>this.pause();document.getElementById('resetBtn').onclick=()=>this.reset();document.getElementById('addTaskBtn').onclick=()=>this.openModal();document.getElementById('modalClose').onclick=()=>this.closeModal();document.getElementById('cancelTask').onclick=()=>this.closeModal();document.getElementById('taskForm').onsubmit=e=>this.submit(e);document.getElementById('taskDueDate').onchange=()=>this.updateDueHint();document.getElementById('taskDueDate').oninput=()=>this.updateDueHint();document.getElementById('taskModal').onclick=e=>{if(e.target.id==='taskModal')this.closeModal()};document.getElementById('filterCategory').onchange=()=>this.renderArchive();document.getElementById('filterDate').onchange=()=>this.renderArchive();document.getElementById('saveSettings').onclick=()=>this.saveCfg();document.getElementById('requestNotification').onclick=()=>this.reqNotify();document.getElementById('exportData').onclick=()=>this.export();document.getElementById('clearData').onclick=()=>this.clearAll()}start(){this.timer.start();document.getElementById('startBtn').disabled=true;document.getElementById('pauseBtn').disabled=false}pause(){this.timer.pause();document.getElementById('startBtn').disabled=false;document.getElementById('pauseBtn').disabled=true}reset(){this.timer.reset();document.getElementById('startBtn').disabled=false;document.getElementById('pauseBtn').disabled=true}updTimer(r,t){const m=Math.floor(r/60),s=r%60;document.getElementById('timerDisplay').textContent=`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;const c=2*Math.PI*65,o=c*(1-r/t);document.getElementById('timerProgress').style.strokeDashoffset=o}onState(s){const el=document.getElementById('timerState'),pg=document.getElementById('timerProgress');el.textContent=s;if(s!=='WORK'){el.classList.add('break');pg.classList.add('break')}else{el.classList.remove('break');pg.classList.remove('break')}}async onDone(w){if(w&&this.focus){const t=this.tasks.find(x=>x.id===this.focus);if(t){t.pomodoroCount=(t.pomodoroCount||0)+1;await this.db.put('tasks',t);this.render()}}this.beep();this.notify(w?'作業完了！':'休憩終了！',w?'休憩を取りましょう':'作業を再開しましょう');this.toast(w?'セッション完了！':'休憩終了！')}
+        openModal(id=null, mode="edit"){
+            this.modalMode = mode; // "new" | "edit" | "view"
+            const m = document.getElementById('taskModal');
+            const t = document.getElementById('modalTitle');
+            const dl = document.getElementById('categoryList');
+            const undoBtn = document.getElementById('undoTask');
+            const delBtn = document.getElementById('deleteTask');
+            const saveBtn = document.getElementById('saveTask');
+
+            dl.innerHTML='';
+            this.cats.forEach(c=>{
+                const o=document.createElement('option');
+                o.value=c;
+                dl.appendChild(o);
+            });
+
+            const setRO = (ro)=>{
+                ['taskTitle','taskDescription','taskCategory','taskPriority','taskDueDate'].forEach(id=>{
+                    const el=document.getElementById(id);
+                    if(!el) return;
+                    el.disabled = !!ro;
+                    if('readOnly' in el) el.readOnly = !!ro;
+                });
+            };
+
+            if(!id){
+                t.textContent='NEW';
+                document.getElementById('taskId').value='';
+                document.getElementById('taskTitle').value='';
+                document.getElementById('taskDescription').value='';
+                document.getElementById('taskCategory').value='';
+                document.getElementById('taskPriority').value='medium';
+                // default due date = +7 days
+                const d=new Date(); d.setDate(d.getDate()+7);
+                const iso=d.toISOString().slice(0,10);
+                document.getElementById('taskDueDate').value=iso;
+                this.updateDueWeekday();
+                if(undoBtn) undoBtn.style.display='none';
+                if(delBtn) delBtn.style.display='none';
+                if(saveBtn) saveBtn.style.display='';
+                setRO(false);
+            }else{
+                const x=this.tasks.find(tt=>tt.id===id);
+                if(!x) return;
+                const isArchived = !!x.completed;
+                if(mode==="view"){
+                    t.textContent='ARCHIVED (READONLY)';
+                    setRO(true);
+                    if(saveBtn) saveBtn.style.display='none';
+                    if(delBtn) delBtn.style.display='none';
+                    if(undoBtn) undoBtn.style.display = isArchived ? '' : 'none';
+                }else{
+                    t.textContent='EDIT';
+                    setRO(false);
+                    if(saveBtn) saveBtn.style.display='';
+                    if(delBtn) delBtn.style.display='';
+                    if(undoBtn) undoBtn.style.display='none';
+                }
+
+                document.getElementById('taskId').value=x.id;
+                document.getElementById('taskTitle').value=x.title||'';
+                document.getElementById('taskDescription').value=x.description||'';
+                document.getElementById('taskCategory').value=x.category||'';
+                document.getElementById('taskPriority').value=x.priority||'medium';
+                document.getElementById('taskDueDate').value=x.dueDate||'';
+                this.updateDueWeekday();
+            }
+
+            m.classList.add('active');
+        }
+        closeModal(){
+document.getElementById('taskModal').classList.remove('active')}async submit(e){e.preventDefault();const id=document.getElementById('taskId').value;const d={title:document.getElementById('taskTitle').value,description:document.getElementById('taskDescription').value,category:document.getElementById('taskCategory').value,priority:document.getElementById('taskPriority').value,dueDate:document.getElementById('taskDueDate').value,completed:false,pomodoroCount:0,createdAt:new Date().toISOString()};if(id){const ex=this.tasks.find(t=>t.id===parseInt(id));d.id=parseInt(id);d.pomodoroCount=ex?.pomodoroCount||0;d.createdAt=ex?.createdAt||d.createdAt;await this.db.put('tasks',d);this.toast('更新しました')}else{await this.db.add('tasks',d);this.toast('追加しました')}await this.loadTasks();
+            await this.loadLogs();this.render();this.closeModal()}async delTask(id){if(confirm('削除しますか？')){await this.db.del('tasks',id);if(this.focus===id){this.focus=null;this.updFocus()}await this.loadTasks();
+            await this.loadLogs();this.render();this.toast('削除しました')}}async doneTask(id){const t=this.tasks.find(x=>x.id===id);if(t){t.completed=true;t.completedAt=new Date().toISOString();await this.db.put('tasks',t);if(this.focus===id){this.focus=null;this.updFocus()}await this.loadTasks();
+            await this.loadLogs();this.render();this.toast('アーカイブしました')}}focusTask(id){
+            if(this.focus===id){
+                this.focus=null;
+            }else{
+                this.focus=id;
+            }
+            this.updFocus();
+            this.render();
+        }updFocus(){const el=document.getElementById('currentFocus');if(this.focus){const t=this.tasks.find(x=>x.id===this.focus);if(t){el.textContent=t.title;el.classList.remove('empty')}}else{el.textContent='— 未選択 —';el.classList.add('empty')}}async saveCfg(){const c={work:parseInt(document.getElementById('workDuration').value),short:parseInt(document.getElementById('shortBreak').value),long:parseInt(document.getElementById('longBreak').value),sound:parseInt(document.getElementById('soundEnabled').value)};await this.db.put('settings',{key:'work',value:c.work});await this.db.put('settings',{key:'short',value:c.short});await this.db.put('settings',{key:'long',value:c.long});await this.db.put('settings',{key:'sound',value:c.sound});this.timer.set(c);this.toast('保存しました')}async reqNotify(){if('Notification'in window){const p=await Notification.requestPermission();this.toast(p==='granted'?'通知ON':'通知OFF')}else this.toast('非対応')}notify(t,b){if('Notification'in window&&Notification.permission==='granted')new Notification(t,{body:b})}beep(){if(document.getElementById('soundEnabled').value==='0')return;if(!this.audio)this.audio=new(window.AudioContext||window.webkitAudioContext)();const o=this.audio.createOscillator(),g=this.audio.createGain();o.connect(g);g.connect(this.audio.destination);o.frequency.value=800;o.type='sine';g.gain.setValueAtTime(0.3,this.audio.currentTime);g.gain.exponentialRampToValueAtTime(0.01,this.audio.currentTime+0.5);o.start();o.stop(this.audio.currentTime+0.5)}async export(){const d={tasks:this.tasks,at:new Date().toISOString()};const b=new Blob([JSON.stringify(d,null,2)],{type:'application/json'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=`pomodoro-${new Date().toISOString().split('T')[0]}.json`;a.click();URL.revokeObjectURL(u);this.toast('エクスポートしました')}async clearAll(){if(confirm('全データを削除しますか？')){await this.db.clear('tasks');await this.db.clear('settings');this.tasks=[];this.cats.clear();this.focus=null;this.updFocus();this.render();this.toast('削除しました')}}
+        async loadLogs(){
+            this.logs = await this.db.getAll('logs');
+        }
+
+        render(){this.renderTasks();this.renderArchive();this.renderCats()}icon(c){const m={'仕事':'fa-briefcase','勉強':'fa-graduation-cap','読書':'fa-book','運動':'fa-dumbbell','趣味':'fa-palette','プログラミング':'fa-code','会議':'fa-users','メール':'fa-envelope'};return m[c]||'fa-bookmark'}fmtDate(d){if(!d)return'';const x=new Date(d);if(Number.isNaN(x.getTime()))return String(d);return x.toLocaleDateString('ja-JP',{year:'numeric',month:'2-digit',day:'2-digit',weekday:'short'})}updateDueHint(){const i=document.getElementById('taskDueDate'),h=document.getElementById('taskDueWeekday');if(!i||!h)return;if(!i.value){h.textContent='';return}const x=new Date(i.value);if(Number.isNaN(x.getTime())){h.textContent='';return}h.textContent=`WEEKDAY: ${x.toLocaleDateString('ja-JP',{weekday:'short'})}`}renderTasks(){const g=document.getElementById('taskGrid'),e=document.getElementById('emptyTasks'),a=this.tasks.filter(t=>!t.completed);if(!a.length){g.innerHTML='';e.style.display='block';return}e.style.display='none';g.innerHTML=a.map(t=>{const od=t.dueDate&&new Date(t.dueDate)<new Date(),f=t.id===this.focus;return`<div class="task-card ${f?'focused':''}" data-id="${t.id}"><div class="task-card-header"><div class="task-thumb"><i class="fas ${this.icon(t.category)}"></i></div><div class="task-info"><div class="task-title">${this.esc(t.title)}</div>${t.category?`<span class="task-cat">${this.esc(t.category)}</span>`:''}</div></div><div class="task-meta"><span class="task-pomo"><i class="fas fa-clock"></i> ${t.pomodoroCount||0}</span>${t.dueDate?`<span class="task-due ${od?'overdue':''}">${this.fmtDate(t.dueDate)}</span>`:''}<span class="priority-${t.priority}"><i class="fas fa-flag"></i></span></div><div class="task-actions"><button class="task-action" onclick="app.focusTask(${t.id})">FOCUS</button><button class="task-action" onclick="app.openModal(${t.id})">EDIT</button><button class="task-action done" onclick="app.doneTask(${t.id})">DONE</button><button class="task-action del" onclick="app.delTask(${t.id})">DEL</button></div></div>`}).join('')}renderArchive(){
+            const list=document.getElementById('archiveList');
+            if(!list) return;
+            list.innerHTML='';
+            const cat=(document.getElementById('filterCategory')||{}).value||'';
+            const range=(document.getElementById('filterDate')||{}).value||'all';
+            if(this.viewMode==='logs'){
+                let logs=[...this.logs];
+                if(cat) logs=logs.filter(l=>(l.category||'')===cat);
+                // range filter (based on endedAt)
+                const now=new Date();
+                const startOfToday=new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                const days=(n)=>new Date(startOfToday.getTime()-n*86400000);
+                const inRange=(iso)=>{
+                    if(range==='all') return true;
+                    const d=new Date(iso);
+                    if(range==='today') return d>=startOfToday;
+                    if(range==='7d') return d>=days(7);
+                    if(range==='30d') return d>=days(30);
+                    return true;
+                };
+                logs=logs.filter(l=>l.endedAt && inRange(l.endedAt));
+                logs.sort((a,b)=>(b.endedAt||'').localeCompare(a.endedAt||''));
+                if(logs.length===0){
+                    list.innerHTML='<div class="empty-state">SESSION LOGS: none</div>';
+                    return;
+                }
+                logs.forEach(l=>{
+                    const item=document.createElement('div');
+                    item.className='archive-item';
+                    const title=l.taskTitle?`WORK: ${escapeHtml(l.taskTitle)}`:'WORK: (NO TASK)';
+                    const meta=`${(l.endedAt||'').slice(0,19).replace('T',' ')} / ${l.durationMin||'?'}min / ${(l.category||'—')}`;
+                    item.innerHTML=`<div class="archive-title">${title}</div><div class="archive-meta">${escapeHtml(meta)}</div>`;
+                    list.appendChild(item);
+                });
+                return;
+            }
+const l=document.getElementById('archiveList'),e=document.getElementById('emptyArchive'),cf=document.getElementById('filterCategory').value,df=document.getElementById('filterDate').value;let a=this.tasks.filter(t=>t.completed);if(cf)a=a.filter(t=>t.category===cf);if(df){const n=new Date(),sd=new Date(n.getFullYear(),n.getMonth(),n.getDate()),sw=new Date(sd);sw.setDate(sw.getDate()-sw.getDay());const sm=new Date(n.getFullYear(),n.getMonth(),1);a=a.filter(t=>{const c=new Date(t.completedAt);return df==='today'?c>=sd:df==='week'?c>=sw:df==='month'?c>=sm:true})}if(!a.length){l.innerHTML='';e.style.display='block';return}e.style.display='none';l.innerHTML=a.map((t,i)=>`<div class="archive-item"><div class="archive-num">#${String(i+1).padStart(3,'0')}</div><div class="archive-content"><div class="archive-title">${this.esc(t.title)}</div><div class="archive-meta"><span><i class="fas fa-clock"></i> ${t.pomodoroCount||0}</span>${t.category?`<span><i class="fas fa-tag"></i> ${this.esc(t.category)}</span>`:''}<span><i class="fas fa-calendar-check"></i> ${t.completedAt?new Date(t.completedAt).toLocaleDateString('ja-JP',{year:'numeric',month:'2-digit',day:'2-digit',weekday:'short'}):''}</span></div></div></div>`).join('')}renderCats(){const s=document.getElementById('filterCategory'),v=s.value;s.innerHTML='<option value="">ALL</option>';this.cats.forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=c;s.appendChild(o)});s.value=v}esc(t){const d=document.createElement('div');d.textContent=t;return d.innerHTML}toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500)}}
+
+    const app=new App();app.init().catch(console.error);
+    
+</script>
+</body>
+</html>

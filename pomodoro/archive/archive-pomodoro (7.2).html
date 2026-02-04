@@ -1,0 +1,1487 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ARCHIVE: POMODORO</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+
+        :root {
+            --bg-deep: #08080a;
+            --bg-surface: #0c0c10;
+            --bg-elevated: #121218;
+            --bg-card: #0e0e14;
+            --border-dim: #1a1a24;
+            --border-glow: #2a2a38;
+            --text-primary: #ffffff;
+            --text-secondary: #ffffff;
+            --text-muted: #888888;
+            --accent: #00F0FF;
+            --accent-dim: rgba(0, 240, 255, 0.6);
+            --success: #6a6;
+            --danger: #a66;
+            --warning: #aa6;
+            --glow: rgba(0, 240, 255, 0.25);
+            --glow-strong: rgba(0, 240, 255, 0.4);
+            --font: 'Share Tech Mono', monospace;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: var(--font);
+            background: var(--bg-deep);
+            color: var(--text-primary);
+            min-height: 100vh;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        .container { max-width: 1100px; margin: 0 auto; padding: 0.8rem; }
+
+        /* ===== HEADER ===== */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0;
+            margin-bottom: 0.8rem;
+            border-bottom: 1px solid var(--border-dim);
+        }
+        .header-title { font-size: 11px; letter-spacing: 0.3em; color: var(--accent); }
+        .header-status { font-size: 10px; color: var(--success); display: flex; align-items: center; gap: 0.4rem; }
+        .status-dot { width: 5px; height: 5px; background: var(--success); border-radius: 50%; animation: pulse 2s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+        /* ===== SECTION ===== */
+        .section {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-dim);
+            margin-bottom: 0.8rem;
+            padding: 0.8rem;
+        }
+        .section-label {
+            font-size: 9px;
+            letter-spacing: 0.15em;
+            color: var(--accent);
+            margin-bottom: 0.6rem;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+        .section-label::before { content: '◇'; opacity: 0.5; }
+
+        /* ===== TIMER ===== */
+        .timer-section { display: flex; gap: 1.5rem; align-items: center; flex-wrap: wrap; }
+        .timer-display { position: relative; width: 140px; height: 140px; flex-shrink: 0; }
+        .timer-ring { position: absolute; inset: 0; }
+        .timer-ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+        .timer-ring-bg { fill: none; stroke: var(--border-dim); stroke-width: 3; }
+        .timer-ring-progress { fill: none; stroke: var(--accent); stroke-width: 3; stroke-linecap: round; stroke-dasharray: 408; stroke-dashoffset: 0; transition: stroke-dashoffset 0.5s; filter: drop-shadow(0 0 6px var(--glow)); }
+        .timer-ring-progress.break { stroke: var(--success); }
+        .timer-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .timer-time { font-size: 28px; font-weight: 700; letter-spacing: 0.05em; }
+        .timer-state { font-size: 9px; letter-spacing: 0.2em; color: var(--accent); margin-top: 2px; }
+        .timer-state.break { color: var(--success); }
+
+        .timer-controls { display: flex; flex-direction: column; gap: 0.4rem; }
+        .timer-btn {
+            font-family: var(--font);
+            font-size: 10px;
+            letter-spacing: 0.1em;
+            padding: 0.5rem 1.2rem;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-dim);
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .timer-btn:hover { border-color: var(--accent); color: var(--accent); }
+        .timer-btn.primary { background: var(--accent); border-color: var(--accent); color: var(--bg-deep); }
+        .timer-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+        .timer-info { flex: 1; min-width: 200px; }
+        .focus-label { font-size: 9px; color: var(--text-muted); margin-bottom: 0.2rem; }
+        .focus-title { font-size: 13px; color: var(--text-primary); padding: 0.4rem 0.6rem; background: var(--bg-elevated); border-left: 2px solid var(--accent); }
+        .focus-title.empty { color: var(--text-muted); font-style: italic; }
+
+        /* ===== TASK GRID ===== */
+        .task-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.6rem; }
+        .add-btn {
+            font-family: var(--font);
+            font-size: 9px;
+            padding: 0.35rem 0.7rem;
+            background: transparent;
+            border: 1px solid var(--accent);
+            color: var(--accent);
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+        .add-btn:hover { background: var(--accent); color: var(--bg-deep); }
+
+        .task-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 0.6rem; }
+
+        .task-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-dim);
+            padding: 0.6rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+        .task-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, var(--accent), transparent); opacity: 0; transition: opacity 0.2s; }
+        .task-card:hover { border-color: var(--accent); box-shadow: 0 0 12px var(--glow); }
+        .task-card:hover::before { opacity: 1; }
+        .task-card.focused { border-color: var(--accent); box-shadow: 0 0 15px var(--glow); }
+        .task-card.focused::before { opacity: 1; }
+
+        .task-card-header { display: flex; gap: 0.5rem; align-items: flex-start; margin-bottom: 0.4rem; }
+
+        .task-thumb {
+            width: 36px; height: 36px;
+            background: var(--bg-elevated);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            color: var(--accent);
+            flex-shrink: 0;
+            filter: grayscale(100%);
+            transition: filter 0.3s, box-shadow 0.3s;
+            position: relative;
+        }
+        .task-thumb::before {
+            content: '';
+            position: absolute;
+            inset: -2px;
+            border-radius: 50%;
+            border: 1px solid transparent;
+            border-top-color: var(--accent);
+            border-right-color: var(--accent);
+            opacity: 0.3;
+            animation: spin 4s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .task-card:hover .task-thumb { filter: grayscale(0%); box-shadow: 0 0 10px var(--glow); }
+        .task-card:hover .task-thumb::before { opacity: 0.8; }
+        .task-card.focused .task-thumb { filter: grayscale(0%); box-shadow: 0 0 12px var(--glow); }
+        .task-card.focused .task-thumb::before { opacity: 1; }
+
+        .task-info { flex: 1; min-width: 0; }
+        .task-title { font-size: 11px; font-weight: 700; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .task-cat { font-size: 8px; color: var(--accent); background: rgba(0, 240, 255, 0.1); padding: 1px 4px; display: inline-block; }
+
+        .task-meta { display: flex; justify-content: space-between; font-size: 9px; color: var(--text-muted); margin-top: 0.3rem; }
+        .task-pomo { color: var(--accent); }
+        .task-due.overdue { color: var(--danger); }
+        .priority-high { color: var(--danger); }
+        .priority-medium { color: var(--warning); }
+        .priority-low { color: var(--success); }
+
+        .task-actions { display: flex; gap: 0.3rem; margin-top: 0.4rem; padding-top: 0.4rem; border-top: 1px solid var(--border-dim); }
+        .task-action {
+            font-family: var(--font);
+            font-size: 8px;
+            padding: 0.25rem 0.5rem;
+            background: transparent;
+            border: 1px solid var(--border-dim);
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .task-action:hover { border-color: var(--accent); color: var(--accent); }
+        .task-action.done:hover { border-color: var(--success); color: var(--success); }
+        .task-action.del:hover { border-color: var(--danger); color: var(--danger); }
+
+        .empty { text-align: center; padding: 1.5rem; color: var(--text-muted); font-size: 11px; }
+
+        /* ===== DATABASE ===== */
+        .filters { display: flex; gap: 0.5rem; margin-bottom: 0.6rem; flex-wrap: wrap; }
+        .filter-select {
+            font-family: var(--font);
+            font-size: 9px;
+            padding: 0.3rem 0.6rem;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-dim);
+            color: var(--text-primary);
+            cursor: pointer;
+        }
+        .filter-select:focus { outline: none; border-color: var(--accent); }
+
+        .archive-list { display: flex; flex-direction: column; gap: 0.3rem; }
+        .archive-item {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            padding: 0.5rem;
+            background: var(--bg-elevated);
+            border-left: 2px solid var(--accent);
+            transition: all 0.2s;
+        }
+        .archive-item:hover { background: var(--bg-card); }
+        .archive-num { font-size: 9px; color: var(--text-muted); min-width: 30px; }
+        .archive-content { flex: 1; }
+        .archive-title { font-size: 11px; }
+        .archive-meta { font-size: 9px; color: var(--text-muted); display: flex; gap: 0.8rem; }
+
+        /* ===== SYSTEM ===== */
+        .system-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 0.6rem; }
+        .system-card { background: var(--bg-elevated); border: 1px solid var(--border-dim); padding: 0.6rem; }
+        .system-card-title { font-size: 9px; color: var(--text-muted); margin-bottom: 0.5rem; letter-spacing: 0.1em; }
+        .setting-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem; font-size: 10px; }
+        .setting-input {
+            font-family: var(--font);
+            font-size: 10px;
+            width: 50px;
+            padding: 0.2rem;
+            background: var(--bg-surface);
+            border: 1px solid var(--border-dim);
+            color: var(--text-primary);
+            text-align: center;
+        }
+        .setting-input:focus { outline: none; border-color: var(--accent); }
+        .sys-btn {
+            width: 100%;
+            font-family: var(--font);
+            font-size: 9px;
+            padding: 0.4rem;
+            background: var(--bg-surface);
+            border: 1px solid var(--border-dim);
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 0.3rem;
+        }
+        .sys-btn:hover { border-color: var(--accent); color: var(--accent); }
+        .sys-btn.danger:hover { border-color: var(--danger); color: var(--danger); }
+
+        /* ===== MODAL ===== */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s;
+        }
+        .modal-overlay.active { opacity: 1; visibility: visible; }
+        .modal {
+            background: var(--bg-surface);
+            border: 1px solid var(--accent);
+            width: 90%;
+            max-width: 360px;
+            max-height: 85vh;
+            overflow-y: auto;
+        }
+        .modal-header {
+            padding: 0.6rem 0.8rem;
+            border-bottom: 1px solid var(--border-dim);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .modal-title { font-size: 10px; letter-spacing: 0.15em; color: var(--accent); }
+        .modal-close { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 14px; }
+        .modal-close:hover { color: var(--text-primary); }
+        .modal-body { padding: 0.8rem; }
+        .form-group { margin-bottom: 0.6rem; }
+        .form-label { display: block; font-size: 9px; color: var(--text-muted); margin-bottom: 0.2rem; }
+        .form-hint { margin-top: 0.25rem; font-size: 10px; color: var(--text-muted); font-family: var(--font-mono); letter-spacing: 0.08em; }
+        .form-input, .form-select, .form-textarea {
+            width: 100%;
+            font-family: var(--font);
+            font-size: 11px;
+            padding: 0.5rem;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-dim);
+            color: var(--text-primary);
+        }
+        .form-input:focus, .form-select:focus, .form-textarea:focus { outline: none; border-color: var(--accent); }
+        .form-textarea { min-height: 60px; resize: vertical; }
+        .form-actions { display: flex; gap: 0.5rem; margin-top: 0.8rem; }
+        .form-btn {
+            flex: 1;
+            font-family: var(--font);
+            font-size: 10px;
+            padding: 0.5rem;
+            border: 1px solid var(--border-dim);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .form-btn.primary { background: var(--accent); border-color: var(--accent); color: var(--bg-deep); }
+        .form-btn.secondary { background: transparent; color: var(--text-primary); }
+        .form-btn.secondary:hover { border-color: var(--text-primary); }
+
+        .toast {
+            position: fixed;
+            bottom: 1rem; right: 1rem;
+            padding: 0.5rem 1rem;
+            background: var(--bg-elevated);
+            border: 1px solid var(--accent);
+            color: var(--text-primary);
+            font-size: 10px;
+            transform: translateY(60px);
+            opacity: 0;
+            transition: all 0.2s;
+            z-index: 2000;
+        }
+        .toast.show { transform: translateY(0); opacity: 1; }
+
+        @media (max-width: 600px) {
+            .timer-section { flex-direction: column; align-items: stretch; }
+            .timer-display { margin: 0 auto; }
+            .timer-controls { flex-direction: row; justify-content: center; }
+            .task-grid { grid-template-columns: 1fr; }
+        }
+    
+
+        /* === Enhancements: Focus visibility + title/status color + accent palette === */
+        .header-title { color: #ffffff; } /* title white */
+        #sysStatusText { color: var(--accent); } /* status in accent */
+        .status-dot { background: var(--accent); box-shadow: 0 0 12px var(--glow); }
+
+        /* Stronger focus state (card + focus banner) */
+        .task-card.focused {
+            border-width: 2px;
+            border-color: var(--accent);
+            box-shadow: 0 0 22px var(--glow);
+            background: linear-gradient(180deg, rgba(0, 240, 255, 0.10), rgba(0,0,0,0.0));
+        }
+        .task-card.focused::after{
+            content:"";
+            position:absolute;
+            inset:-2px;
+            pointer-events:none;
+            border-radius: 12px;
+            background: radial-gradient(circle at 30% 20%, rgba(255,255,255,0.08), transparent 55%);
+            mix-blend-mode: screen;
+            opacity: 0.9;
+        }
+        .focus-title:not(.empty){
+            color: #ffffff;
+            text-shadow: 0 0 14px var(--glow);
+        }
+        .focus-label{
+            color: var(--accent-dim);
+        }
+
+        /* Accent palette */
+        .palette { display:flex; gap:10px; flex-wrap:wrap; padding-top:4px; }
+        .swatch{
+            width: 22px; height: 22px;
+            border-radius: 7px;
+            border: 1px solid var(--border-glow);
+            background: var(--accent);
+            cursor:pointer;
+            box-shadow: 0 0 10px rgba(0,0,0,0.25);
+        }
+        .swatch:hover{
+            transform: translateY(-1px);
+            box-shadow: 0 0 16px var(--glow);
+            border-color: var(--accent);
+        }
+        .swatch.selected{
+            outline: 2px solid var(--accent);
+            outline-offset: 2px;
+            box-shadow: 0 0 18px var(--glow);
+        }
+</style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="header-title">ARCHIVE: POMODORO</div>
+            <div class="header-status"><span class="status-dot"></span><span id="sysStatusText">ONLINE</span></div>
+        </header>
+
+        <section class="section">
+            <div class="section-label">FILE: 00-CHRONOMETER</div>
+            <div class="timer-section">
+                <div class="timer-display">
+                    <div class="timer-ring">
+                        <svg viewBox="0 0 140 140">
+                            <circle class="timer-ring-bg" cx="70" cy="70" r="65"/>
+                            <circle class="timer-ring-progress" id="timerProgress" cx="70" cy="70" r="65"/>
+                        </svg>
+                    </div>
+                    <div class="timer-center">
+                        <div class="timer-time" id="timerDisplay">25:00</div>
+                        <div class="timer-state" id="timerState">WORK</div>
+                    </div>
+                </div>
+                <div class="timer-controls">
+                    <button class="timer-btn primary" id="startBtn">START</button>
+                    <button class="timer-btn" id="pauseBtn" disabled>PAUSE</button>
+                    <button class="timer-btn" id="resetBtn">RESET</button>
+                </div>
+                <div class="timer-info">
+                    <div class="focus-label">CURRENT SUBJECT:</div>
+                    <div class="focus-title empty" id="currentFocus">— 未選択 —</div>
+                </div>
+            </div>
+        </section>
+
+        <section class="section">
+            <div class="task-header">
+                <div class="section-label">FILE: 01-SUBJECTS</div>
+                <button class="add-btn" id="addTaskBtn"><i class="fas fa-plus"></i> NEW</button>
+            </div>
+            <div class="task-grid" id="taskGrid"></div>
+            <div class="empty" id="emptyTasks" style="display:none;"><i class="fas fa-book-open"></i> アーカイブする物語がありません</div>
+        </section>
+
+        <section class="section">
+            <div class="section-label">FILE: 02-DATABASE</div>
+            <div class="filters">
+                <select class="filter-select" id="filterCategory"><option value="">ALL CATEGORIES</option></select>
+                <select class="filter-select" id="filterDate">
+                    <option value="">ALL TIME</option>
+                    <option value="today">TODAY</option>
+                    <option value="week">WEEK</option>
+                    <option value="month">MONTH</option>
+                </select>
+                            <select class="filter-select" id="filterView">
+                    <option value="archive" selected>ARCHIVED TASKS</option>
+                    <option value="logs">SESSION LOGS</option>
+                </select>
+</div>
+            <div class="archive-list" id="archiveList"></div>
+                        <div class="archive-list" id="logList" style="display:none;"></div>
+<div class="empty" id="emptyArchive" style="display:none;"><i class="fas fa-archive"></i> 完了した記録はありません</div>
+                    <div class="empty" id="emptyLogs" style="display:none;"><i class="fas fa-clock"></i> セッションログはありません</div>
+</section>
+
+        <section class="section">
+            <div class="section-label">FILE: 99-SYSTEM</div>
+            <div class="system-grid">
+                <div class="system-card">
+                    <div class="system-card-title">TIMER</div>
+                    <div class="setting-row"><span>作業（分）</span><input type="number" class="setting-input" id="workDuration" value="25" min="1" max="60"></div>
+                    <div class="setting-row"><span>短休憩</span><input type="number" class="setting-input" id="shortBreak" value="5" min="1" max="30"></div>
+                    <div class="setting-row"><span>長休憩</span><input type="number" class="setting-input" id="longBreak" value="15" min="1" max="60"></div>
+                    <button class="sys-btn" id="saveSettings">SAVE</button>
+                </div>
+                <div class="system-card">
+                    <div class="system-card-title">NOTIFY</div>
+                    <div class="setting-row"><span>通知音</span><select class="setting-input" id="soundEnabled" style="width:auto;"><option value="1">ON</option><option value="0">OFF</option></select></div>
+                    <button class="sys-btn" id="requestNotification">ENABLE</button>
+                </div>
+                <div class="system-card">
+                    <div class="system-card-title">DATA</div>
+                    <button class="sys-btn" id="exportData">EXPORT</button>
+                    <button class="sys-btn danger" id="clearData">CLEAR ALL</button>
+                </div>
+            
+                <div class="system-card">
+                    <div class="system-card-title">THEME</div>
+                    <div class="setting-row" style="align-items:flex-start;">
+                        <span>アクセント</span>
+                        <div class="palette" id="accentPalette" aria-label="accent palette">
+                            <button type="button" class="swatch" data-accent="#00F0FF" title="Cyan"></button>
+                            <button type="button" class="swatch" data-accent="#7CFF00" title="Lime"></button>
+                            <button type="button" class="swatch" data-accent="#FF2FD0" title="Magenta"></button>
+                            <button type="button" class="swatch" data-accent="#9B5CFF" title="Violet"></button>
+                            <button type="button" class="swatch" data-accent="#FFB000" title="Amber"></button>
+                        </div>
+                    </div>
+                    <div class="setting-row">
+                        <span>現在</span>
+                        <input type="text" class="setting-input" id="accentHex" value="#00F0FF" style="width:140px;" readonly>
+                    </div>
+                </div>
+
+            </div>
+        </section
+    </div>
+
+    <div class="modal-overlay" id="taskModal">
+        <div class="modal">
+            <div class="modal-header">
+                <span class="modal-title" id="modalTitle">NEW ENTRY</span>
+                <button class="modal-close" id="modalClose"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="taskForm">
+                    <input type="hidden" id="taskId">
+                    <div class="form-group">
+                        <label class="form-label">TITLE</label>
+                        <input type="text" class="form-input" id="taskTitle" required placeholder="タスク名">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">DESCRIPTION</label>
+                        <textarea class="form-textarea" id="taskDescription" placeholder="詳細（任意）"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">CATEGORY</label>
+                        <input type="text" class="form-input" id="taskCategory" list="categoryList" placeholder="カテゴリ">
+                        <datalist id="categoryList"></datalist>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">PRIORITY</label>
+                        <select class="form-select" id="taskPriority">
+                            <option value="low">LOW</option>
+                            <option value="medium" selected>MEDIUM</option>
+                            <option value="high">HIGH</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">DUE DATE</label>
+                        <input type="date" class="form-input" id="taskDueDate">
+                    <div class="form-hint" id="taskDueWeekday"></div>
+</div>
+                    <div class="form-actions">
+                        <button type="button" class="form-btn secondary" id="cancelTask">CANCEL</button>
+                        <button type="submit" class="form-btn primary">SAVE</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    
+<script>
+(() => {
+  "use strict";
+
+  // ===== Utilities =====
+  const PHASE = { WORK: "WORK", SHORT: "SHORT BREAK", LONG: "LONG BREAK" };
+  const WEEKDAYS_JP = ["日","月","火","水","木","金","土"];
+
+  const pad2 = (n) => String(n).padStart(2, "0");
+  const isoToday = () => new Date().toISOString().slice(0,10);
+
+  function fmtWeekday(dateStr){
+    if(!dateStr) return "";
+    const d = new Date(dateStr + "T00:00:00");
+    if(Number.isNaN(d.getTime())) return "";
+    return WEEKDAYS_JP[d.getDay()] || "";
+  }
+  function fmtDateJP(dateStr){
+    if(!dateStr) return "";
+    const d = new Date(dateStr + "T00:00:00");
+    if(Number.isNaN(d.getTime())) return String(dateStr);
+    return d.toLocaleDateString("ja-JP",{year:"numeric",month:"2-digit",day:"2-digit",weekday:"short"});
+  }
+  function esc(t){
+    const div = document.createElement("div");
+    div.textContent = t ?? "";
+    return div.innerHTML;
+  }
+
+  // ===== Storage (IndexedDB with file:// fallback) =====
+  class DB {
+    constructor(){
+      this.name = "ArchivePomodoroDB";
+      this.ver = 2; // v2 adds logs store
+      this.db = null;
+      this.mode = "INDEXEDDB"; // or LOCALSTORAGE
+      this.prefix = "archive_pomodoro_v2:";
+    }
+
+    async init(){
+      // Some environments restrict IndexedDB on file://; fallback to localStorage.
+      if(!("indexedDB" in window)){
+        this.mode = "LOCALSTORAGE";
+        return true;
+      }
+
+      try{
+        await new Promise((res, rej) => {
+          const r = indexedDB.open(this.name, this.ver);
+          r.onerror = () => rej(r.error || new Error("IndexedDB open failed"));
+          r.onsuccess = () => { this.db = r.result; res(true); };
+          r.onupgradeneeded = (e) => {
+            const d = e.target.result;
+
+            // tasks
+            if(!d.objectStoreNames.contains("tasks")){
+              const s = d.createObjectStore("tasks",{ keyPath:"id", autoIncrement:true });
+              s.createIndex("completed","completed",{ unique:false });
+              s.createIndex("archivedAt","archivedAt",{ unique:false });
+            }else{
+              const s = r.transaction.objectStore("tasks");
+              if(!s.indexNames.contains("archivedAt")) s.createIndex("archivedAt","archivedAt",{ unique:false });
+            }
+
+            // settings
+            if(!d.objectStoreNames.contains("settings")){
+              d.createObjectStore("settings",{ keyPath:"key" });
+            }
+
+            // logs
+            if(!d.objectStoreNames.contains("logs")){
+              const l = d.createObjectStore("logs",{ keyPath:"id", autoIncrement:true });
+              l.createIndex("endedAt","endedAt",{ unique:false });
+              l.createIndex("category","category",{ unique:false });
+              l.createIndex("taskId","taskId",{ unique:false });
+            }
+          };
+        });
+        this.mode = "INDEXEDDB";
+        return true;
+      }catch(err){
+        console.warn("IndexedDB unavailable, fallback to localStorage:", err);
+        this.mode = "LOCALSTORAGE";
+        this.db = null;
+        return true;
+      }
+    }
+
+    // localStorage helpers
+    _k(store){ return `${this.prefix}${store}`; }
+    _read(store){
+      try { return JSON.parse(localStorage.getItem(this._k(store)) || "[]"); }
+      catch { return []; }
+    }
+    _write(store, arr){ localStorage.setItem(this._k(store), JSON.stringify(arr)); }
+
+    // IDB helpers
+    _tx(store, mode="readonly"){ return this.db.transaction(store, mode).objectStore(store); }
+
+    async getAll(store){
+      if(this.mode === "LOCALSTORAGE") return this._read(store);
+      return new Promise((res, rej) => {
+        const t = this._tx(store,"readonly").getAll();
+        t.onerror = () => rej(t.error);
+        t.onsuccess = () => res(t.result || []);
+      });
+    }
+    async get(store, key){
+      if(this.mode === "LOCALSTORAGE"){
+        const arr = this._read(store);
+        if(store === "settings") return arr.find(x => x.key === key) || null;
+        return arr.find(x => x.id === key) || null;
+      }
+      return new Promise((res, rej) => {
+        const t = this._tx(store,"readonly").get(key);
+        t.onerror = () => rej(t.error);
+        t.onsuccess = () => res(t.result || null);
+      });
+    }
+    async add(store, data){
+      if(this.mode === "LOCALSTORAGE"){
+        const arr = this._read(store);
+        if(store === "settings"){
+          const idx = arr.findIndex(x => x.key === data.key);
+          if(idx >= 0) arr[idx] = data; else arr.push(data);
+          this._write(store, arr);
+          return data.key;
+        }
+        const nextId = arr.reduce((m,x)=>Math.max(m, Number(x.id||0)), 0) + 1;
+        arr.push({ ...data, id: nextId });
+        this._write(store, arr);
+        return nextId;
+      }
+      return new Promise((res, rej) => {
+        const t = this._tx(store,"readwrite").add(data);
+        t.onerror = () => rej(t.error);
+        t.onsuccess = () => res(t.result);
+      });
+    }
+    async put(store, data){
+      if(this.mode === "LOCALSTORAGE"){
+        const arr = this._read(store);
+        if(store === "settings"){
+          const idx = arr.findIndex(x => x.key === data.key);
+          if(idx >= 0) arr[idx] = data; else arr.push(data);
+          this._write(store, arr);
+          return data.key;
+        }
+        const idx = arr.findIndex(x => x.id === data.id);
+        if(idx >= 0) arr[idx] = data; else arr.push(data);
+        this._write(store, arr);
+        return data.id;
+      }
+      return new Promise((res, rej) => {
+        const t = this._tx(store,"readwrite").put(data);
+        t.onerror = () => rej(t.error);
+        t.onsuccess = () => res(t.result);
+      });
+    }
+    async del(store, key){
+      if(this.mode === "LOCALSTORAGE"){
+        const arr = this._read(store);
+        const next = store === "settings" ? arr.filter(x => x.key !== key) : arr.filter(x => x.id !== key);
+        this._write(store, next);
+        return true;
+      }
+      return new Promise((res, rej) => {
+        const t = this._tx(store,"readwrite").delete(key);
+        t.onerror = () => rej(t.error);
+        t.onsuccess = () => res(true);
+      });
+    }
+    async clear(store){
+      if(this.mode === "LOCALSTORAGE"){
+        localStorage.removeItem(this._k(store));
+        return true;
+      }
+      return new Promise((res, rej) => {
+        const t = this._tx(store,"readwrite").clear();
+        t.onerror = () => rej(t.error);
+        t.onsuccess = () => res(true);
+      });
+    }
+  }
+
+  // ===== Timer =====
+  class Timer{
+    constructor(tick, done, state){
+      this.cur = PHASE.WORK;
+      this.cnt = 0;
+      this.cfg = { work:25, short:5, long:15 };
+      this.rem = this.cfg.work * 60;
+      this.tot = this.rem;
+      this.run = false;
+      this.iv = null;
+      this.tick = tick;
+      this.done = done;
+      this.state = state;
+    }
+    set(c){
+      this.cfg = { ...this.cfg, ...c };
+      if(!this.run) this.reset();
+    }
+    start(){
+      if(this.run) return;
+      this.run = true;
+      this.iv = setInterval(()=>this._tick(), 1000);
+    }
+    pause(){
+      this.run = false;
+      if(this.iv){ clearInterval(this.iv); this.iv = null; }
+    }
+    reset(){
+      this.pause();
+      this.cur = PHASE.WORK;
+      this.cnt = 0;
+      this.rem = this.cfg.work * 60;
+      this.tot = this.rem;
+      this.state(this.cur);
+      this.tick(this.rem, this.tot);
+    }
+    _tick(){
+      this.rem--;
+      this.tick(this.rem, this.tot);
+      if(this.rem <= 0) this._done();
+    }
+    _done(){
+      this.pause();
+      const finished = this.cur;
+
+      if(this.cur === PHASE.WORK){
+        this.cnt++;
+        this.done(true, finished);
+        this.cur = (this.cnt % 4 === 0) ? PHASE.LONG : PHASE.SHORT;
+        this.rem = (this.cur === PHASE.LONG ? this.cfg.long : this.cfg.short) * 60;
+      }else{
+        this.done(false, finished);
+        this.cur = PHASE.WORK;
+        this.rem = this.cfg.work * 60;
+      }
+      this.tot = this.rem;
+      this.state(this.cur);
+      this.tick(this.rem, this.tot);
+    }
+  }
+
+  // ===== App =====
+  class App{
+    constructor(){
+      this.db = new DB();
+      this.timer = null;
+
+      this.focus = null;
+      this.tasks = [];
+      this.logs = [];
+      this.cats = new Set();
+
+      this.phaseStartedAt = new Date().toISOString();
+      this.audio = null;
+      this.viewMode = "archive"; // archive | logs
+      this.modalMode = "edit";   // new | edit | view
+    }
+
+    async init(){
+      await this.db.init();
+      this.updateStatus();
+      await this.loadCfg();
+      await this.loadTasks();
+      await this.loadLogs();
+      this.initTimer();
+      this.bind();
+      this.render();
+    }
+
+    updateStatus(){
+      const el = document.getElementById("sysStatusText");
+      if(el){
+        el.textContent = this.db.mode === "INDEXEDDB" ? "ONLINE / STORAGE: INDEXEDDB" : "ONLINE / STORAGE: LOCALSTORAGE";
+      }
+    }
+
+    initTimer(){
+      this.timer = new Timer(
+        (r,t)=>this.updTimer(r,t),
+        (w, finished)=>this.onDone(w, finished),
+        (s)=>this.onState(s)
+      );
+      // apply current cfg
+      const c = {
+        work: parseInt(document.getElementById("workDuration").value,10) || 25,
+        short: parseInt(document.getElementById("shortBreak").value,10) || 5,
+        long: parseInt(document.getElementById("longBreak").value,10) || 15,
+      };
+      this.timer.set(c);
+    }
+
+    async loadCfg(){
+      const w = await this.db.get("settings","work");
+      const s = await this.db.get("settings","short");
+      const l = await this.db.get("settings","long");
+      const snd = await this.db.get("settings","sound");
+
+            const acc = await this.db.get("settings","accent");
+
+document.getElementById("workDuration").value = w?.value || 25;
+      document.getElementById("shortBreak").value = s?.value || 5;
+      document.getElementById("longBreak").value = l?.value || 15;
+      document.getElementById("soundEnabled").value = (snd?.value ?? 1);
+
+      // Accent theme
+      const accent = (acc?.value || "#00F0FF");
+      this.applyAccent(accent);
+      const ah = document.getElementById("accentHex");
+      if(ah) ah.value = accent;
+
+      if(this.timer){
+        this.timer.set({ work: w?.value || 25, short: s?.value || 5, long: l?.value || 15 });
+      }
+    }
+
+    async loadTasks(){
+      this.tasks = await this.db.getAll("tasks");
+      this.cats.clear();
+      this.tasks.forEach(t => { if(t.category) this.cats.add(t.category); });
+    }
+
+    async loadLogs(){
+      this.logs = await this.db.getAll("logs");
+      this.logs.forEach(l => { if(l.category) this.cats.add(l.category); });
+    }
+
+    bind(){
+      document.getElementById("startBtn").onclick = () => this.start();
+      document.getElementById("pauseBtn").onclick = () => this.pause();
+      document.getElementById("resetBtn").onclick = () => this.reset();
+
+      document.getElementById("addTaskBtn").onclick = () => this.openModal(null, "new");
+
+      document.getElementById("modalClose").onclick = () => this.closeModal();
+      document.getElementById("cancelTask").onclick = () => this.closeModal();
+
+      document.getElementById("taskForm").onsubmit = (e) => this.submit(e);
+
+      const due = document.getElementById("taskDueDate");
+      due.onchange = () => this.updateDueHint();
+      due.oninput = () => this.updateDueHint();
+
+      document.getElementById("taskModal").onclick = (e) => {
+        if(e.target.id === "taskModal") this.closeModal();
+      
+      // Accent palette
+      const pal = document.getElementById("accentPalette");
+      if(pal){
+        pal.addEventListener("click", async (e) => {
+          const btn = e.target.closest(".swatch");
+          if(!btn) return;
+          const hex = btn.getAttribute("data-accent");
+          if(!hex) return;
+          this.applyAccent(hex);
+          const ah = document.getElementById("accentHex");
+          if(ah) ah.value = hex;
+          await this.saveAccent(hex);
+          this.toast("アクセントを変更しました");
+        });
+      }
+
+    };
+
+      document.getElementById("filterCategory").onchange = () => this.renderDatabase();
+      document.getElementById("filterDate").onchange = () => this.renderDatabase();
+      document.getElementById("filterView").onchange = (e) => {
+        this.viewMode = e.target.value;
+        this.renderDatabase();
+      };
+
+      document.getElementById("saveSettings").onclick = () => this.saveCfg();
+      document.getElementById("requestNotification").onclick = () => this.reqNotify();
+      document.getElementById("exportData").onclick = () => this.export();
+      document.getElementById("clearData").onclick = () => this.clearAll();
+    }
+
+    start(){
+      this.timer.start();
+      document.getElementById("startBtn").disabled = true;
+      document.getElementById("pauseBtn").disabled = false;
+      // start timestamp for current phase
+      this.phaseStartedAt = new Date().toISOString();
+    }
+    pause(){
+      this.timer.pause();
+      document.getElementById("startBtn").disabled = false;
+      document.getElementById("pauseBtn").disabled = true;
+    }
+    reset(){
+      this.timer.reset();
+      document.getElementById("startBtn").disabled = false;
+      document.getElementById("pauseBtn").disabled = true;
+    }
+
+    updTimer(r,t){
+      const rr = Math.max(0, r);
+      const m = Math.floor(rr/60), s = rr%60;
+      document.getElementById("timerDisplay").textContent = `${pad2(m)}:${pad2(s)}`;
+
+      const c = 2 * Math.PI * 65;
+      const progress = (t>0) ? (1 - (rr / t)) : 1;
+      const offset = c * progress;
+      document.getElementById("timerProgress").style.strokeDashoffset = offset;
+    }
+
+    onState(s){
+      const el = document.getElementById("timerState");
+      const pg = document.getElementById("timerProgress");
+      el.textContent = s;
+      if(s !== PHASE.WORK){
+        el.classList.add("break");
+        pg.classList.add("break");
+      }else{
+        el.classList.remove("break");
+        pg.classList.remove("break");
+      }
+      // phase start time when state flips (idle ok)
+      this.phaseStartedAt = new Date().toISOString();
+    }
+
+    async onDone(workDone, finishedPhase){
+      const endedAt = new Date().toISOString();
+
+      // WORK done => increment and write log (WORK only)
+      if(workDone){
+        const focused = this.focus ? this.tasks.find(x => x.id === this.focus) : null;
+        if(focused){
+          focused.pomodoroCount = (focused.pomodoroCount || 0) + 1;
+          await this.db.put("tasks", focused);
+        }
+
+        const durationMin = parseInt(document.getElementById("workDuration").value,10) || 25;
+        await this.db.add("logs", {
+          phase: PHASE.WORK,
+          durationMin,
+          startedAt: this.phaseStartedAt,
+          endedAt,
+          taskId: focused?.id ?? null,
+          taskTitle: focused?.title ?? null,
+          category: focused?.category ?? null,
+          createdAt: new Date().toISOString(),
+        });
+      }
+
+      this.beep();
+      this.notify(workDone ? "作業完了！" : "休憩終了！", workDone ? "休憩を取りましょう" : "作業を再開しましょう");
+      this.toast(workDone ? "セッション完了！" : "休憩終了！");
+
+      await this.loadTasks();
+      await this.loadLogs();
+      this.render();
+    }
+
+    // ===== Modal =====
+    openModal(id=null, mode="edit"){
+      const modal = document.getElementById("taskModal");
+      const form = document.getElementById("taskForm");
+      const title = document.getElementById("modalTitle");
+      const dl = document.getElementById("categoryList");
+      dl.innerHTML = "";
+      this.cats.forEach(c => { const o=document.createElement("option"); o.value=c; dl.appendChild(o); });
+
+      const task = id ? this.tasks.find(t => t.id === id) : null;
+
+      this.modalMode = mode;
+
+      // common set
+      const setDisabled = (disabled) => {
+        document.getElementById("taskTitle").disabled = disabled;
+        document.getElementById("taskDescription").disabled = disabled;
+        document.getElementById("taskCategory").disabled = disabled;
+        document.getElementById("taskPriority").disabled = disabled;
+        document.getElementById("taskDueDate").disabled = disabled;
+      };
+
+      // add/remove custom actions in modal footer
+      let actions = form.querySelector(".form-actions");
+      if(!actions){
+        // should not happen, but guard
+        actions = document.createElement("div");
+        actions.className = "form-actions";
+        form.appendChild(actions);
+      }
+
+      // remove existing "UNDO" button if present
+      const oldUndo = document.getElementById("undoTaskBtn");
+      if(oldUndo) oldUndo.remove();
+
+      const addUndoBtn = (taskId) => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.id = "undoTaskBtn";
+        btn.className = "form-btn secondary";
+        btn.textContent = "UNDO";
+        btn.onclick = async () => {
+          await this.undoTask(taskId);
+          this.closeModal();
+        };
+        actions.insertBefore(btn, actions.firstChild);
+      };
+
+      if(mode === "new"){
+        title.textContent = "NEW ENTRY";
+        form.reset();
+        document.getElementById("taskId").value = "";
+        // default due = 7 days later
+        const dd = new Date();
+        dd.setDate(dd.getDate() + 7);
+        document.getElementById("taskDueDate").value = dd.toISOString().slice(0,10);
+        this.updateDueHint();
+
+        setDisabled(false);
+        // show SAVE
+        actions.querySelector('button[type="submit"]').style.display = "";
+        document.getElementById("cancelTask").textContent = "CANCEL";
+      }else if(mode === "view"){
+        if(!task) return;
+        title.textContent = "ARCHIVED (READONLY)";
+        document.getElementById("taskId").value = task.id;
+        document.getElementById("taskTitle").value = task.title;
+        document.getElementById("taskDescription").value = task.description || "";
+        document.getElementById("taskCategory").value = task.category || "";
+        document.getElementById("taskPriority").value = task.priority || "medium";
+        document.getElementById("taskDueDate").value = task.dueDate || "";
+        this.updateDueHint();
+
+        setDisabled(true);
+        // hide SAVE, show UNDO, make cancel be CLOSE
+        actions.querySelector('button[type="submit"]').style.display = "none";
+        document.getElementById("cancelTask").textContent = "CLOSE";
+        addUndoBtn(task.id);
+      }else{
+        // edit
+        if(task){
+          title.textContent = "EDIT";
+          document.getElementById("taskId").value = task.id;
+          document.getElementById("taskTitle").value = task.title;
+          document.getElementById("taskDescription").value = task.description || "";
+          document.getElementById("taskCategory").value = task.category || "";
+          document.getElementById("taskPriority").value = task.priority || "medium";
+          document.getElementById("taskDueDate").value = task.dueDate || "";
+          this.updateDueHint();
+        }else{
+          title.textContent = "NEW ENTRY";
+        }
+        setDisabled(false);
+        actions.querySelector('button[type="submit"]').style.display = "";
+        document.getElementById("cancelTask").textContent = "CANCEL";
+      }
+
+      modal.classList.add("active");
+    }
+
+    closeModal(){
+      const modal = document.getElementById("taskModal");
+      modal.classList.remove("active");
+      // restore cancel label
+      document.getElementById("cancelTask").textContent = "CANCEL";
+      // restore save button if hidden (for next open)
+      const submitBtn = document.querySelector('#taskForm .form-actions button[type="submit"]');
+      if(submitBtn) submitBtn.style.display = "";
+      // remove undo button
+      const oldUndo = document.getElementById("undoTaskBtn");
+      if(oldUndo) oldUndo.remove();
+      // re-enable fields
+      ["taskTitle","taskDescription","taskCategory","taskPriority","taskDueDate"].forEach(id=>{
+        const el=document.getElementById(id);
+        if(el) el.disabled = false;
+      });
+    }
+
+    async submit(e){
+      e.preventDefault();
+      // block if in view mode (shouldn't happen)
+      if(this.modalMode === "view") return;
+
+      const id = document.getElementById("taskId").value;
+      const ex = id ? this.tasks.find(t => t.id === parseInt(id,10)) : null;
+
+      const d = {
+        title: document.getElementById("taskTitle").value,
+        description: document.getElementById("taskDescription").value,
+        category: document.getElementById("taskCategory").value,
+        priority: document.getElementById("taskPriority").value,
+        dueDate: document.getElementById("taskDueDate").value,
+        completed: ex?.completed ?? false,
+        completedAt: ex?.completedAt ?? null,
+        archivedAt: ex?.archivedAt ?? null,
+        pomodoroCount: ex?.pomodoroCount || 0,
+        createdAt: ex?.createdAt || new Date().toISOString(),
+      };
+
+      if(id){
+        d.id = parseInt(id,10);
+        await this.db.put("tasks", d);
+        this.toast("更新しました");
+      }else{
+        await this.db.add("tasks", d);
+        this.toast("追加しました");
+      }
+
+      await this.loadTasks();
+      this.render();
+      this.closeModal();
+    }
+
+    async delTask(id){
+      if(confirm("削除しますか？")){
+        await this.db.del("tasks", id);
+        if(this.focus === id){
+          this.focus = null;
+          this.updFocus();
+        }
+        await this.loadTasks();
+        this.render();
+        this.toast("削除しました");
+      }
+    }
+
+    async doneTask(id){
+      const t = this.tasks.find(x => x.id === id);
+      if(t){
+        t.completed = true;
+        t.completedAt = new Date().toISOString();
+        t.archivedAt = t.completedAt; // unified
+        await this.db.put("tasks", t);
+        if(this.focus === id){
+          this.focus = null;
+          this.updFocus();
+        }
+        await this.loadTasks();
+        this.render();
+        this.toast("アーカイブしました");
+      }
+    }
+
+    async undoTask(id){
+      const t = this.tasks.find(x => x.id === id);
+      if(t){
+        t.completed = false;
+        t.completedAt = null;
+        t.archivedAt = null;
+        await this.db.put("tasks", t);
+        await this.loadTasks();
+        this.render();
+        this.toast("復帰しました");
+      }
+    }
+
+    focusTask(id){
+      // Toggle focus: click the focused card again to UNFOCUS
+      if(this.focus === id){
+        this.focus = null;
+      }else{
+        this.focus = id;
+      }
+      this.updFocus();
+      this.render();
+    }
+
+    updFocus(){
+      const el = document.getElementById("currentFocus");
+      if(this.focus){
+        const t = this.tasks.find(x => x.id === this.focus && !x.completed);
+        if(t){
+          el.textContent = t.title;
+          el.classList.remove("empty");
+          return;
+        }
+      }
+      el.textContent = "— 未選択 —";
+      el.classList.add("empty");
+    }
+
+    async saveCfg(){
+      const c = {
+        work: parseInt(document.getElementById("workDuration").value,10),
+        short: parseInt(document.getElementById("shortBreak").value,10),
+        long: parseInt(document.getElementById("longBreak").value,10),
+        sound: parseInt(document.getElementById("soundEnabled").value,10),
+      };
+      await this.db.put("settings",{ key:"work", value:c.work });
+      await this.db.put("settings",{ key:"short", value:c.short });
+      await this.db.put("settings",{ key:"long", value:c.long });
+      await this.db.put("settings",{ key:"sound", value:c.sound });
+      this.timer.set(c);
+      this.toast("保存しました");
+    }
+
+    async reqNotify(){
+      if("Notification" in window){
+        const p = await Notification.requestPermission();
+        this.toast(p === "granted" ? "通知ON" : "通知OFF");
+      }else{
+        this.toast("非対応");
+      }
+    }
+
+    notify(t,b){
+      if("Notification" in window && Notification.permission === "granted"){
+        new Notification(t,{ body:b });
+      }
+    }
+
+    beep(){
+      if(document.getElementById("soundEnabled").value === "0") return;
+      if(!this.audio) this.audio = new (window.AudioContext || window.webkitAudioContext)();
+      const o = this.audio.createOscillator(), g = this.audio.createGain();
+      o.connect(g); g.connect(this.audio.destination);
+      o.frequency.value = 800; o.type = "sine";
+      g.gain.setValueAtTime(0.3, this.audio.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.01, this.audio.currentTime + 0.5);
+      o.start(); o.stop(this.audio.currentTime + 0.5);
+    }
+
+    async export(){
+      const d = { tasks: this.tasks, logs: this.logs, at: new Date().toISOString() };
+      const b = new Blob([JSON.stringify(d,null,2)], { type:"application/json" });
+      const u = URL.createObjectURL(b);
+      const a = document.createElement("a");
+      a.href = u;
+      a.download = `pomodoro-${new Date().toISOString().split("T")[0]}.json`;
+      a.click();
+      URL.revokeObjectURL(u);
+      this.toast("エクスポートしました");
+    }
+
+    async clearAll(){
+      if(confirm("全データを削除しますか？")){
+        await this.db.clear("tasks");
+        await this.db.clear("settings");
+        await this.db.clear("logs");
+        this.tasks = [];
+        this.logs = [];
+        this.cats.clear();
+        this.focus = null;
+        this.updFocus();
+        this.render();
+        this.toast("削除しました");
+      }
+    }
+
+    // ===== Render =====
+    render(){
+      this.renderTasks();
+      this.renderCats();
+      this.renderDatabase();
+      this.updFocus();
+    }
+
+    renderCats(){
+      const s = document.getElementById("filterCategory");
+      const v = s.value;
+      s.innerHTML = '<option value="">ALL</option>';
+      this.cats.forEach(c => {
+        const o = document.createElement("option");
+        o.value = c;
+        o.textContent = c;
+        s.appendChild(o);
+      });
+      s.value = v;
+    }
+
+    icon(c){
+      const m={'仕事':'fa-briefcase','勉強':'fa-graduation-cap','読書':'fa-book','運動':'fa-dumbbell','趣味':'fa-palette','プログラミング':'fa-code','会議':'fa-users','メール':'fa-envelope'};
+      return m[c] || 'fa-bookmark';
+    }
+
+    updateDueHint(){
+      const i = document.getElementById("taskDueDate");
+      const h = document.getElementById("taskDueWeekday");
+      if(!i || !h) return;
+      if(!i.value){ h.textContent = ""; return; }
+      const wd = fmtWeekday(i.value);
+      h.textContent = wd ? `WEEKDAY: ${wd}` : "";
+    }
+
+    renderTasks(){
+      const g = document.getElementById("taskGrid");
+      const e = document.getElementById("emptyTasks");
+      const a = this.tasks.filter(t => !t.completed);
+
+      if(!a.length){
+        g.innerHTML = "";
+        e.style.display = "block";
+        return;
+      }
+      e.style.display = "none";
+
+      g.innerHTML = a.map(t => {
+        const od = t.dueDate && new Date(t.dueDate + "T00:00:00") < new Date(isoToday() + "T00:00:00");
+        const f = t.id === this.focus;
+        return `
+<div class="task-card ${f?'focused':''}" data-id="${t.id}">
+  <div class="task-card-header">
+    <div class="task-thumb"><i class="fas ${this.icon(t.category)}"></i></div>
+    <div class="task-info">
+      <div class="task-title">${esc(t.title)}</div>
+      ${t.category ? `<span class="task-cat">${esc(t.category)}</span>` : ``}
+    </div>
+  </div>
+  <div class="task-meta">
+    <span class="task-pomo"><i class="fas fa-clock"></i> ${t.pomodoroCount||0}</span>
+    ${t.dueDate ? `<span class="task-due ${od?'overdue':''}">${fmtDateJP(t.dueDate)}</span>` : ``}
+    <span class="priority-${t.priority}"><i class="fas fa-flag"></i></span>
+  </div>
+  <div class="task-actions">
+    <button class="task-action" onclick="app.focusTask(${t.id})">FOCUS</button>
+    <button class="task-action" onclick="app.openModal(${t.id}, 'edit')">EDIT</button>
+    <button class="task-action done" onclick="app.doneTask(${t.id})">DONE</button>
+    <button class="task-action del" onclick="app.delTask(${t.id})">DEL</button>
+  </div>
+</div>`;
+      }).join("");
+    }
+
+    renderDatabase(){
+      const viewSel = document.getElementById("filterView");
+      this.viewMode = viewSel ? viewSel.value : "archive";
+
+      const cat = document.getElementById("filterCategory").value;
+      const df = document.getElementById("filterDate").value;
+
+      const archiveList = document.getElementById("archiveList");
+      const emptyArchive = document.getElementById("emptyArchive");
+      const logList = document.getElementById("logList");
+      const emptyLogs = document.getElementById("emptyLogs");
+
+      // compute date window
+      const now = new Date();
+      const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const startOfWeek = new Date(startOfToday); startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+      const inDateFilter = (iso) => {
+        if(!df) return true;
+        const d = new Date(iso);
+        if(Number.isNaN(d.getTime())) return false;
+        if(df === "today") return d >= startOfToday;
+        if(df === "week") return d >= startOfWeek;
+        if(df === "month") return d >= startOfMonth;
+        return true;
+      };
+
+      if(this.viewMode === "logs"){
+        // show logs
+        archiveList.style.display = "none";
+        emptyArchive.style.display = "none";
+        logList.style.display = "";
+        const logs = this.logs
+          .filter(l => (cat ? l.category === cat : true))
+          .filter(l => l.endedAt ? inDateFilter(l.endedAt) : true)
+          .sort((a,b)=>(b.endedAt||"").localeCompare(a.endedAt||""));
+
+        if(!logs.length){
+          logList.innerHTML = "";
+          emptyLogs.style.display = "block";
+          return;
+        }
+        emptyLogs.style.display = "none";
+
+        logList.innerHTML = logs.map((l,i) => `
+<div class="archive-item" style="border-left-color: var(--success);">
+  <div class="archive-num">#${String(i+1).padStart(3,"0")}</div>
+  <div class="archive-content">
+    <div class="archive-title">${esc(l.taskTitle ? `WORK: ${l.taskTitle}` : "WORK: (NO TASK)")}</div>
+    <div class="archive-meta">
+      <span><i class="fas fa-stopwatch"></i> ${l.durationMin ?? "?"}m</span>
+      ${l.category ? `<span><i class="fas fa-tag"></i> ${esc(l.category)}</span>` : ``}
+      <span><i class="fas fa-calendar"></i> ${l.endedAt ? new Date(l.endedAt).toLocaleDateString("ja-JP",{year:"numeric",month:"2-digit",day:"2-digit",weekday:"short"}) : ""}</span>
+    </div>
+  </div>
+</div>`).join("");
+        return;
+      }
+
+      // archived tasks view
+      logList.style.display = "none";
+      emptyLogs.style.display = "none";
+      archiveList.style.display = "";
+      const archived = this.tasks
+        .filter(t => t.completed)
+        .filter(t => (cat ? t.category === cat : true))
+        .filter(t => (t.completedAt ? inDateFilter(t.completedAt) : true))
+        .sort((a,b)=>(b.completedAt||"").localeCompare(a.completedAt||""));
+
+      if(!archived.length){
+        archiveList.innerHTML = "";
+        emptyArchive.style.display = "block";
+        return;
+      }
+      emptyArchive.style.display = "none";
+
+      archiveList.innerHTML = archived.map((t,i) => `
+<div class="archive-item" onclick="app.openModal(${t.id}, 'view')">
+  <div class="archive-num">#${String(i+1).padStart(3,"0")}</div>
+  <div class="archive-content">
+    <div class="archive-title">${esc(t.title)}</div>
+    <div class="archive-meta">
+      <span><i class="fas fa-clock"></i> ${t.pomodoroCount||0}</span>
+      ${t.category ? `<span><i class="fas fa-tag"></i> ${esc(t.category)}</span>` : ``}
+      <span><i class="fas fa-calendar-check"></i> ${t.completedAt ? new Date(t.completedAt).toLocaleDateString("ja-JP",{year:"numeric",month:"2-digit",day:"2-digit",weekday:"short"}) : ""}</span>
+      <span style="margin-left:auto;"><button class="task-action" style="font-size:8px;padding:0.2rem 0.45rem;" onclick="event.stopPropagation(); app.undoTask(${t.id});">UNDO</button></span>
+    </div>
+  </div>
+</div>`).join("");
+    }
+
+    // ===== toast =====
+    toast(m){
+      const t = document.getElementById("toast");
+      t.textContent = m;
+      t.classList.add("show");
+      setTimeout(()=>t.classList.remove("show"), 2500);
+    }
+  }
+
+  // boot
+  window.app = new App();
+  window.app.init().catch((e)=>{
+    console.error(e);
+    alert("初期化に失敗しました: " + (e?.message || e));
+  });
+
+})();
+</script>
+
+</body>
+</html>
