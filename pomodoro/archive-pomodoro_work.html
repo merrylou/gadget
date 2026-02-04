@@ -1189,21 +1189,36 @@
         // Override renderTasks to include link icons and category filter
         const origRenderTasks = window.app.renderTasks.bind(window.app);
         window.app.renderTasks = function () {
-            const g = document.getElementById('taskGrid'), e = document.getElementById('emptyTasks'), a = this.tasks.filter(t => !t.completed);
+            const g = document.getElementById('taskGrid'), e = document.getElementById('emptyTasks');
+            const activeTasks = this.tasks.filter(t => !t.completed);
+            let tasks = activeTasks;
             // Apply category filter (OR condition)
-            let filtered = a;
             if (this.filterCategories.size > 0) {
                 // If __UNCATEGORIZED__ is selected, include tasks with falsy category
                 const includeUn = this.filterCategories.has('__UNCATEGORIZED__');
-                filtered = a.filter(t => {
+                tasks = tasks.filter(t => {
                     if (!t.category) return includeUn;
                     return this.filterCategories.has(t.category);
                 });
             }
-            this.renderCategoryFilters(a);
-            if (!filtered.length) { g.innerHTML = ''; e.style.display = 'block'; return }
+            if (this.priorityFilter instanceof Set && this.priorityFilter.size > 0) {
+                tasks = tasks.filter(t => {
+                    if (!t.priority) return false;
+                    return this.priorityFilter.has(String(t.priority).toUpperCase());
+                });
+            }
+            tasks.sort((a, b) => {
+                const aDue = a.dueDate ? new Date(a.dueDate) : null;
+                const bDue = b.dueDate ? new Date(b.dueDate) : null;
+                if (aDue && bDue) return aDue - bDue;
+                if (aDue) return -1;
+                if (bDue) return 1;
+                return 0;
+            });
+            this.renderCategoryFilters(activeTasks);
+            if (!tasks.length) { g.innerHTML = ''; e.style.display = 'block'; return }
             e.style.display = 'none';
-            g.innerHTML = filtered.map(t => {
+            g.innerHTML = tasks.map(t => {
                 const now = new Date(), f = t.id === this.focus;
                 let dueClass = '';
                 if (t.dueDate) {
@@ -1264,5 +1279,3 @@
 </body>
 
 </html>
-
-<!-- PATCH-CHECK: 2026-02-04T16:xx -->
