@@ -1200,10 +1200,25 @@
                     return this.filterCategories.has(t.category);
                 });
             }
+            const priorityFilter = this.priorityFilter;
+            if (priorityFilter instanceof Set && priorityFilter.size > 0) {
+                const normalized = new Set([...priorityFilter].map(p => String(p).toLowerCase()));
+                filtered = filtered.filter(t => t.priority && normalized.has(String(t.priority).toLowerCase()));
+            }
             this.renderCategoryFilters(a);
             if (!filtered.length) { g.innerHTML = ''; e.style.display = 'block'; return }
             e.style.display = 'none';
-            g.innerHTML = filtered.map(t => {
+            const sorted = [...filtered].sort((a, b) => {
+                const da = a.dueDate ? new Date(a.dueDate) : null;
+                const db = b.dueDate ? new Date(b.dueDate) : null;
+                const ta = da && !Number.isNaN(da.getTime()) ? da.getTime() : null;
+                const tb = db && !Number.isNaN(db.getTime()) ? db.getTime() : null;
+                if (ta === null && tb === null) return 0;
+                if (ta === null) return 1;
+                if (tb === null) return -1;
+                return ta - tb;
+            });
+            g.innerHTML = sorted.map(t => {
                 const now = new Date(), f = t.id === this.focus;
                 let dueClass = '';
                 if (t.dueDate) {
@@ -1213,7 +1228,8 @@
                     else if (hoursUntil < 48) dueClass = 'due-soon';
                 }
                 const linkHtml = t.linkUrl ? `<a href="${this.esc(t.linkUrl)}" target="_blank" rel="noopener noreferrer" class="task-link-icon" title="${this.esc(t.linkUrl)}"><i class="fas fa-link"></i></a>` : '';
-                return `<div class="task-card ${f ? 'focused' : ''}" data-id="${t.id}"><div class="task-card-header"><div class="task-thumb"><i class="fas ${this.icon(t.category)}"></i></div><div class="task-info"><div class="task-title">${this.esc(t.title)}${linkHtml}</div>${t.category ? `<span class="task-cat">${this.esc(t.category)}</span>` : ''}</div></div><div class="task-meta"><span class="task-pomo"><i class="fas fa-clock"></i> ${t.pomodoroCount || 0}</span>${t.dueDate ? `<span class="task-due ${dueClass}">${this.fmtDate(t.dueDate)}</span>` : ''}<span class="priority-${t.priority}"><i class="fas fa-flag"></i></span></div><div class="task-actions"><button class="task-action" onclick="app.focusTask(${t.id})">FOCUS</button><button class="task-action" onclick="app.openModal(${t.id})">EDIT</button><button class="task-action done" onclick="app.doneTask(${t.id})">DONE</button><button class="task-action del" onclick="app.delTask(${t.id})">DEL</button></div></div>`
+                const priorityIcon = t.priority ? `<span class="priority-${t.priority}"><i class="fas fa-flag"></i></span>` : '';
+                return `<div class="task-card ${f ? 'focused' : ''}" data-id="${t.id}"><div class="task-card-header"><div class="task-thumb"><i class="fas ${this.icon(t.category)}"></i></div><div class="task-info"><div class="task-title">${this.esc(t.title)}${linkHtml}</div>${t.category ? `<span class="task-cat">${this.esc(t.category)}</span>` : ''}</div></div><div class="task-meta"><span class="task-pomo"><i class="fas fa-clock"></i> ${t.pomodoroCount || 0}</span>${t.dueDate ? `<span class="task-due ${dueClass}">${this.fmtDate(t.dueDate)}</span>` : ''}${priorityIcon}</div><div class="task-actions"><button class="task-action" onclick="app.focusTask(${t.id})">FOCUS</button><button class="task-action" onclick="app.openModal(${t.id})">EDIT</button><button class="task-action done" onclick="app.doneTask(${t.id})">DONE</button><button class="task-action del" onclick="app.delTask(${t.id})">DEL</button></div></div>`
             }).join('');
         };
 
@@ -1264,5 +1280,3 @@
 </body>
 
 </html>
-
-<!-- PATCH-CHECK: 2026-02-04T16:xx -->
