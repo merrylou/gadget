@@ -1201,9 +1201,10 @@
                 });
             }
             this.renderCategoryFilters(a);
-            if (!filtered.length) { g.innerHTML = ''; e.style.display = 'block'; return }
+            const sorted = filtered.slice();
+            if (!sorted.length) { g.innerHTML = ''; e.style.display = 'block'; return }
             e.style.display = 'none';
-            g.innerHTML = filtered.map(t => {
+            g.innerHTML = sorted.map(t => {
                 const now = new Date(), f = t.id === this.focus;
                 let dueClass = '';
                 if (t.dueDate) {
@@ -1264,5 +1265,3 @@
 </body>
 
 </html>
-
-<!-- PATCH-CHECK: 2026-02-04T16:xx -->
