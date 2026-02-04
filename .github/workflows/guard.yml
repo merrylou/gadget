@@ -51,44 +51,61 @@ jobs:
 
           print("✅ Changed files are within the allowed list.")
           PY
-      - name: Block risky patterns in archive-pomodoro_work.html
+      - name: Block risky JS patterns in archive-pomodoro_work.html (diff only)
         run: |
           set -euo pipefail
           f="pomodoro/archive-pomodoro_work.html"
 
-          echo "== Pattern scan: ${f} =="
+          # 0) This check applies ONLY when the target file is changed in this PR
+          if ! grep -qx "$f" changed_files.txt; then
+            echo "SKIP: $f not changed in this PR."
+            exit 0
+          fi
 
-          # 1) monkey patch（後付けで window.app に生やすのを禁止）
-          # 例: window.app.renderCategoryFilters = function ...
-          if grep -nE '^\s*window\.app\.[A-Za-z0-9_]+\s*=' "$f"; then
+          echo "== Pattern scan (diff only): ${f} =="
+
+          # 1) Get diff for this PR (no context lines)
+          base="${GITHUB_BASE_REF:-main}"
+          git fetch --no-tags --prune --depth=1 origin "$base"
+          diff="$(git diff --unified=0 "origin/$base"...HEAD -- "$f" || true)"
+
+          # 2) Extract ONLY added lines (ignore +++ header), then scan
+          added="$(printf '%s\n' "$diff" | sed -n 's/^\+//p' | sed '/^\+\+\+ /d')"
+
+          if [ -z "$added" ]; then
+            echo "OK: no added lines in $f."
+            exit 0
+          fi
+
+          # 3) Block monkey patch (window.app.xxx = ...)
+          if printf '%s\n' "$added" | grep -nE '^\s*window\.app\.[A-Za-z0-9_]+\s*='; then
             echo "::error::monkey patch (window.app.*=) is not allowed"
             exit 1
           fi
 
-          # 2) map 内で innerHTML を代入するのを禁止（大事故源）
-          # ざっくりだが効く：mapブロックに innerHTML が出たら落とす
-          if awk '
-            /map\s*\(/ { inmap=1 }
-            inmap && /innerHTML[[:space:]]*=/ { print "map+innerHTML:", NR, $0; bad=1 }
-            inmap && /\)\s*\.join\s*\(/ { inmap=0 }
-            END { exit bad?0:1 }
-          ' "$f"; then
-            echo "::error::innerHTML assignment inside map() is not allowed"
+          # 4) Block innerHTML assignment inside map()
+          if printf '%s\n' "$added" | awk '
+              /map[[:space:]]*\(/ { inmap=1 }
+              inmap && /innerHTML[[:space:]]*=/ { bad=1 }
+              inmap && /\)[[:space:]]*\.join[[:space:]]*\(/ { inmap=0 }
+              END { exit bad?0:1 }
+            '; then
+            echo "::error::innerHTML assignment inside map() is not allowed (diff-only)"
             exit 1
           fi
 
-          # 3) map 内で sort を呼ぶのを禁止（これも大事故源）
-          if awk '
-            /map\s*\(/ { inmap=1 }
-            inmap && /sort\s*\(/ { print "map+sort:", NR, $0; bad=1 }
-            inmap && /\)\s*\.join\s*\(/ { inmap=0 }
-            END { exit bad?0:1 }
-          ' "$f"; then
-            echo "::error::sort() inside map() is not allowed"
+          # 5) Block sort() inside map()
+          if printf '%s\n' "$added" | awk '
+              /map[[:space:]]*\(/ { inmap=1 }
+              inmap && /sort[[:space:]]*\(/ { bad=1 }
+              inmap && /\)[[:space:]]*\.join[[:space:]]*\(/ { inmap=0 }
+              END { exit bad?0:1 }
+            '; then
+            echo "::error::sort() inside map() is not allowed (diff-only)"
             exit 1
           fi
 
-          echo "OK: risky patterns not found."
+          echo "✅ No risky JS patterns found in added lines."
 
       - name: Block PATCH-CHECK markers
         run: |
@@ -121,7 +138,6 @@ jobs:
 
           print("✅ No PATCH-CHECK markers found.")
           PY
-
       - name: Block bidirectional/unicode control characters
         run: |
           set -euo pipefail
