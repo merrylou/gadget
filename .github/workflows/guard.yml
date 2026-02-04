@@ -31,6 +31,7 @@ jobs:
           allowed = [
             "pomodoro/archive-pomodoro_work.html",
             ".github/workflows/guard.yml",
+            "PROJECT_RULES.md",
           ]
 
           changed = [line.strip() for line in pathlib.Path("changed_files.txt").read_text(encoding="utf-8").splitlines() if line.strip()]
