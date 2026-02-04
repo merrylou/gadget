@@ -926,6 +926,7 @@
             <div class="search-parameters">
                 <div class="search-label">SEARCH-PARAMETERS:</div>
                 <div class="tag-container" id="categoryFilters"></div>
+                <div class="tag-container" id="priorityFilters"></div>
                 <button class="tag-btn tag-clear" id="clearFilters">CLEAR</button>
             </div>
             <div class="task-grid" id="taskGrid"></div>
@@ -1044,225 +1045,752 @@
 
         class Timer { constructor(tick, done, state) { this.S = { WORK: 'WORK', SHORT: 'SHORT BREAK', LONG: 'LONG BREAK' }; this.cur = this.S.WORK; this.cnt = 0; this.cfg = { work: 25, short: 5, long: 15 }; this.rem = this.cfg.work * 60; this.tot = this.rem; this.run = false; this.iv = null; this.tick = tick; this.done = done; this.state = state } set(c) { this.cfg = { ...this.cfg, ...c }; if (!this.run) this.reset() } start() { if (this.run) return; this.run = true; this.iv = setInterval(() => this._tick(), 1000) } pause() { this.run = false; if (this.iv) { clearInterval(this.iv); this.iv = null } } reset() { this.pause(); this.cur = this.S.WORK; this.rem = this.cfg.work * 60; this.tot = this.rem; this.tick(this.rem, this.tot); this.state(this.cur) } _tick() { this.rem--; this.tick(this.rem, this.tot); if (this.rem <= 0) this._done() } _done() { this.pause(); if (this.cur === this.S.WORK) { this.cnt++; this.done(true); this.cur = this.cnt % 4 === 0 ? this.S.LONG : this.S.SHORT; this.rem = (this.cnt % 4 === 0 ? this.cfg.long : this.cfg.short) * 60 } else { this.cur = this.S.WORK; this.rem = this.cfg.work * 60; this.done(false) } this.tot = this.rem; this.state(this.cur); this.tick(this.rem, this.tot) } }
 
+        
         class App {
-            constructor() { this.db = new DB(); this.timer = null; this.focus = null; this.tasks = []; this.cats = new Set(); this.audio = null; this.phaseStartedAt = null; this.archiveView = 'archive'; this.filterCategories = new Set(); } async init() { await this.db.init(); await this.loadCfg(); await this.loadTasks(); this.initTimer(); this.bind(); this.render() } initTimer() { this.timer = new Timer((r, t) => this.updTimer(r, t), w => this.onDone(w), s => this.onState(s)) } async loadCfg() { const w = await this.db.get('settings', 'work'), s = await this.db.get('settings', 'short'), l = await this.db.get('settings', 'long'), snd = await this.db.get('settings', 'sound'); document.getElementById('workDuration').value = w?.value || 25; document.getElementById('shortBreak').value = s?.value || 5; document.getElementById('longBreak').value = l?.value || 15; document.getElementById('soundEnabled').value = snd?.value ?? 1; if (this.timer) this.timer.set({ work: w?.value || 25, short: s?.value || 5, long: l?.value || 15 }) } async loadTasks() { this.tasks = await this.db.getAll('tasks'); this.cats.clear(); this.tasks.forEach(t => { if (t.category) this.cats.add(t.category) }) }
+            constructor() {
+                this.db = new DB();
+                this.timer = null;
+                this.focus = null;
+                this.tasks = [];
+                this.cats = new Set();
+                this.audio = null;
+                this.phaseStartedAt = null;
+
+                this.archiveView = 'archive';
+                this.filterCategories = new Set();     // Set<string | "__UNCATEGORIZED__">
+                this.priorityFilter = new Set();       // Set<"high"|"medium"|"low">
+            }
+
+            async init() {
+                await this.db.init();
+                await this.loadCfg();
+                await this.loadTasks();
+                this.initTimer();
+                this.bind();
+                this.render();
+            }
+
+            initTimer() {
+                this.timer = new Timer(
+                    (r, t) => this.updTimer(r, t),
+                    w => this.onDone(w),
+                    s => this.onState(s)
+                );
+            }
+
+            async loadCfg() {
+                const w = await this.db.get('settings', 'work'),
+                    s = await this.db.get('settings', 'short'),
+                    l = await this.db.get('settings', 'long'),
+                    snd = await this.db.get('settings', 'sound');
+
+                document.getElementById('workDuration').value = w?.value || 25;
+                document.getElementById('shortBreak').value = s?.value || 5;
+                document.getElementById('longBreak').value = l?.value || 15;
+                document.getElementById('soundEnabled').value = snd?.value ?? 1;
+
+                if (this.timer) this.timer.set({
+                    work: w?.value || 25,
+                    short: s?.value || 5,
+                    long: l?.value || 15
+                });
+            }
+
+            async loadTasks() {
+                this.tasks = await this.db.getAll('tasks');
+                this.cats.clear();
+                this.tasks.forEach(t => { if (t.category) this.cats.add(t.category); });
+            }
+
+            bind() {
+                document.getElementById('startBtn').onclick = () => this.start();
+                document.getElementById('pauseBtn').onclick = () => this.pause();
+                document.getElementById('resetBtn').onclick = () => this.reset();
+
+                document.getElementById('addTaskBtn').onclick = () => this.openModal();
+                document.getElementById('modalClose').onclick = () => this.closeModal();
+                document.getElementById('cancelTask').onclick = () => this.closeModal();
+                document.getElementById('taskForm').onsubmit = e => this.submit(e);
+
+                const due = document.getElementById('taskDueDate');
+                due.onchange = () => this.updateDueHint();
+                due.oninput = () => this.updateDueHint();
+
+                document.getElementById('taskModal').onclick = e => {
+                    if (e.target.id === 'taskModal') this.closeModal();
+                };
+
+                document.getElementById('archiveView').onchange = e => {
+                    this.archiveView = e.target.value;
+                    this.render();
+                };
+
+                document.getElementById('filterCategory').onchange = () => this.render();
+                document.getElementById('filterDate').onchange = () => this.render();
+
+                document.getElementById('clearFilters').onclick = () => this.clearFilters();
+
+                document.getElementById('saveSettings').onclick = () => this.saveCfg();
+                document.getElementById('requestNotification').onclick = () => this.reqNotify();
+                document.getElementById('exportData').onclick = () => this.export();
+                document.getElementById('clearData').onclick = () => this.clearAll();
+
+                // SEARCH-PARAMETERS: category + priority (event delegation)
+                const catBox = document.getElementById('categoryFilters');
+                if (catBox) {
+                    catBox.onclick = (ev) => {
+                        const btn = ev.target.closest('button[data-cat]');
+                        if (!btn) return;
+                        const cat = btn.dataset.cat;
+                        if (this.filterCategories.has(cat)) this.filterCategories.delete(cat);
+                        else this.filterCategories.add(cat);
+                        this.render();
+                    };
+                }
+
+                const priBox = document.getElementById('priorityFilters');
+                if (priBox) {
+                    priBox.onclick = (ev) => {
+                        const btn = ev.target.closest('button[data-pri]');
+                        if (!btn) return;
+                        const p = btn.dataset.pri;
+                        if (this.priorityFilter.has(p)) this.priorityFilter.delete(p);
+                        else this.priorityFilter.add(p);
+                        this.render();
+                    };
+                }
+
+                // ARCHIVE click -> view modal
+                const archiveList = document.getElementById('archiveList');
+                if (archiveList) {
+                    archiveList.onclick = (ev) => {
+                        const row = ev.target.closest('[data-taskid]');
+                        if (!row) return;
+                        const id = parseInt(row.dataset.taskid, 10);
+                        if (!Number.isFinite(id)) return;
+                        const t = this.tasks.find(x => x.id === id);
+                        if (!t) return;
+                        this.openModal(id, 'view');
+                    };
+                }
+
+                // URL open button in modal
+                const urlEl = document.getElementById('taskUrl');
+                const urlBtn = document.getElementById('openUrlBtn');
+                if (urlEl && urlBtn) {
+                    const updateBtn = () => {
+                        const v = urlEl.value || '';
+                        const ok = v.startsWith('http://') || v.startsWith('https://');
+                        urlBtn.disabled = !ok;
+                        urlBtn.title = ok ? v : 'Valid URL required';
+                    };
+                    urlEl.oninput = updateBtn;
+                    urlBtn.onclick = (e) => {
+                        e.preventDefault();
+                        const v = urlEl.value || '';
+                        if (v.startsWith('http://') || v.startsWith('https://')) {
+                            window.open(v, '_blank', 'noopener,noreferrer');
+                        }
+                    };
+                    updateBtn();
+                }
+            }
+
+            // ===== TIMER =====
+            start() {
+                this.timer.start();
+                if (!this.phaseStartedAt && this.timer.cur === 'WORK') this.phaseStartedAt = new Date().toISOString();
+                document.getElementById('startBtn').disabled = true;
+                document.getElementById('pauseBtn').disabled = false;
+            }
+
+            pause() {
+                this.timer.pause();
+                document.getElementById('startBtn').disabled = false;
+                document.getElementById('pauseBtn').disabled = true;
+            }
+
+            reset() {
+                this.timer.reset();
+                this.phaseStartedAt = null;
+                document.getElementById('startBtn').disabled = false;
+                document.getElementById('pauseBtn').disabled = true;
+            }
+
+            updTimer(r, t) {
+                const m = Math.floor(r / 60), s = r % 60;
+                document.getElementById('timerDisplay').textContent = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+                const c = 2 * Math.PI * 65, o = c * (1 - r / t);
+                document.getElementById('timerProgress').style.strokeDashoffset = o;
+            }
+
+            onState(s) {
+                const el = document.getElementById('timerState'),
+                    pg = document.getElementById('timerProgress');
+                el.textContent = s;
+                if (s !== 'WORK') { el.classList.add('break'); pg.classList.add('break'); }
+                else { el.classList.remove('break'); pg.classList.remove('break'); }
+            }
+
+            async onDone(w) {
+                if (w && this.focus) {
+                    const t = this.tasks.find(x => x.id === this.focus);
+                    if (t) {
+                        t.pomodoroCount = (t.pomodoroCount || 0) + 1;
+                        await this.db.put('tasks', t);
+                        this.render();
+                    }
+                    if (this.phaseStartedAt) {
+                        const cfg = await this.db.get('settings', 'work');
+                        const durationMin = (cfg?.value || 25);
+                        await this.db.add('logs', {
+                            taskId: this.focus,
+                            startedAt: this.phaseStartedAt,
+                            endedAt: new Date().toISOString(),
+                            durationMin: durationMin,
+                            category: t?.category || ''
+                        });
+                        this.phaseStartedAt = null;
+                    }
+                } else {
+                    if (w && !this.phaseStartedAt) this.phaseStartedAt = new Date().toISOString();
+                }
+                this.beep();
+                this.notify(w ? '作業完了！' : '休憩終了！', w ? '休憩を取りましょう' : '作業を再開しましょう');
+                this.toast(w ? 'セッション完了！' : '休憩終了！');
+            }
+
+            // ===== MODAL / TASK CRUD =====
+            openModal(id = null, mode = 'new') {
+                const m = document.getElementById('taskModal');
+                const f = document.getElementById('taskForm');
+                const titleEl = document.getElementById('modalTitle');
+                const dl = document.getElementById('categoryList');
+
+                // rebuild datalist
+                dl.innerHTML = '';
+                this.cats.forEach(c => {
+                    const o = document.createElement('option');
+                    o.value = c;
+                    dl.appendChild(o);
+                });
+
+                // Ensure UNDO button exists once
+                let undoBtn = document.getElementById('undoTask');
+                const actions = f.querySelector('.form-actions');
+                if (!undoBtn) {
+                    undoBtn = document.createElement('button');
+                    undoBtn.type = 'button';
+                    undoBtn.id = 'undoTask';
+                    undoBtn.className = 'form-btn';
+                    undoBtn.textContent = 'UNDO';
+                    undoBtn.style.background = 'var(--success)';
+                    undoBtn.style.borderColor = 'var(--success)';
+                    undoBtn.style.color = 'var(--bg-deep)';
+                    // insert before primary save button (which is last)
+                    actions.insertBefore(undoBtn, actions.lastElementChild);
+                }
+                undoBtn.style.display = 'none';
+                undoBtn.onclick = null;
+
+                const saveBtn = f.querySelector('[type="submit"]');
+
+                const setFieldsDisabled = (disabled) => {
+                    ['taskTitle', 'taskDescription', 'taskCategory', 'taskPriority', 'taskDueDate', 'taskUrl'].forEach(i => {
+                        const el = document.getElementById(i);
+                        if (!el) return;
+                        el.disabled = disabled;
+                        if (el.tagName === 'INPUT') el.readOnly = disabled;
+                    });
+                };
+
+                if (id) {
+                    const x = this.tasks.find(t => t.id === id);
+                    if (!x) return;
+
+                    document.getElementById('taskId').value = x.id;
+                    document.getElementById('taskTitle').value = x.title || '';
+                    document.getElementById('taskDescription').value = x.description || '';
+                    document.getElementById('taskCategory').value = x.category || '';
+                    document.getElementById('taskPriority').value = x.priority || 'medium';
+                    document.getElementById('taskDueDate').value = x.dueDate || '';
+                    document.getElementById('taskUrl').value = x.linkUrl || '';
+
+                    this.updateDueHint();
+
+                    if (mode === 'view') {
+                        titleEl.textContent = 'VIEW TASK';
+                        setFieldsDisabled(true);
+                        saveBtn.style.display = 'none';
+
+                        if (x.completed) {
+                            undoBtn.style.display = '';
+                            undoBtn.onclick = async () => {
+                                await this.unDoneTask(x.id);
+                                this.closeModal();
+                            };
+                        }
+                    } else {
+                        titleEl.textContent = 'EDIT';
+                        setFieldsDisabled(false);
+                        saveBtn.style.display = '';
+                    }
+                } else {
+                    titleEl.textContent = 'NEW ENTRY';
+                    f.reset();
+                    document.getElementById('taskId').value = '';
+                    // default due: +7 days
+                    const dd = new Date();
+                    dd.setDate(dd.getDate() + 7);
+                    document.getElementById('taskDueDate').value = dd.toISOString().slice(0, 10);
+                    document.getElementById('taskUrl').value = '';
+                    this.updateDueHint();
+
+                    setFieldsDisabled(false);
+                    saveBtn.style.display = '';
+                }
+
+                // update URL open button state
+                const urlEl = document.getElementById('taskUrl');
+                const urlBtn = document.getElementById('openUrlBtn');
+                if (urlEl && urlBtn) {
+                    const v = urlEl.value || '';
+                    const ok = v.startsWith('http://') || v.startsWith('https://');
+                    urlBtn.disabled = !ok;
+                    urlBtn.title = ok ? v : 'Valid URL required';
+                }
+
+                m.classList.add('active');
+            }
+
+            closeModal() {
+                document.getElementById('taskModal').classList.remove('active');
+            }
+
+            async submit(e) {
+                e.preventDefault();
+                const id = document.getElementById('taskId').value;
+
+                const d = {
+                    title: document.getElementById('taskTitle').value,
+                    description: document.getElementById('taskDescription').value,
+                    category: document.getElementById('taskCategory').value,
+                    priority: document.getElementById('taskPriority').value,
+                    dueDate: document.getElementById('taskDueDate').value,
+                    linkUrl: document.getElementById('taskUrl')?.value || '',
+                    completed: false,
+                    pomodoroCount: 0,
+                    createdAt: new Date().toISOString()
+                };
+
+                if (id) {
+                    const ex = this.tasks.find(t => t.id === parseInt(id, 10));
+                    d.id = parseInt(id, 10);
+                    d.pomodoroCount = ex?.pomodoroCount || 0;
+                    d.createdAt = ex?.createdAt || d.createdAt;
+                    d.completed = ex?.completed || false;
+                    d.completedAt = ex?.completedAt || null;
+                    d.linkUrl = d.linkUrl || (ex?.linkUrl || '');
+                    await this.db.put('tasks', d);
+                    this.toast('更新しました');
+                } else {
+                    await this.db.add('tasks', d);
+                    this.toast('追加しました');
+                }
+
+                await this.loadTasks();
+                this.render();
+                this.closeModal();
+            }
+
+            async delTask(id) {
+                if (!confirm('削除しますか？')) return;
+                await this.db.del('tasks', id);
+                if (this.focus === id) { this.focus = null; this.updFocus(); }
+                await this.loadTasks();
+                this.render();
+                this.toast('削除しました');
+            }
+
+            async doneTask(id) {
+                const t = this.tasks.find(x => x.id === id);
+                if (!t) return;
+                t.completed = true;
+                t.completedAt = new Date().toISOString();
+                await this.db.put('tasks', t);
+                if (this.focus === id) { this.focus = null; this.updFocus(); }
+                await this.loadTasks();
+                this.render();
+                this.toast('アーカイブしました');
+            }
+
             async unDoneTask(id) {
                 const t = this.tasks.find(x => x.id === id);
                 if (!t) return;
                 t.completed = false;
                 t.completedAt = null;
                 await this.db.put('tasks', t);
-                if (this.focus === id) {
-                    this.focus = null;
-                    this.updFocus();
-                }
+                if (this.focus === id) { this.focus = null; this.updFocus(); }
                 await this.loadTasks();
                 this.render();
                 this.toast('復帰しました');
             }
-            bind() { document.getElementById('startBtn').onclick = () => this.start(); document.getElementById('pauseBtn').onclick = () => this.pause(); document.getElementById('resetBtn').onclick = () => this.reset(); document.getElementById('addTaskBtn').onclick = () => this.openModal(); document.getElementById('modalClose').onclick = () => this.closeModal(); document.getElementById('cancelTask').onclick = () => this.closeModal(); document.getElementById('taskForm').onsubmit = e => this.submit(e); document.getElementById('taskDueDate').onchange = () => this.updateDueHint(); document.getElementById('taskDueDate').oninput = () => this.updateDueHint(); document.getElementById('taskModal').onclick = e => { if (e.target.id === 'taskModal') this.closeModal() }; document.getElementById('filterCategory').onchange = () => this.render(); document.getElementById('filterDate').onchange = () => this.render(); document.getElementById('clearFilters').onclick = () => this.clearFilters(); document.getElementById('saveSettings').onclick = () => this.saveCfg(); document.getElementById('requestNotification').onclick = () => this.reqNotify(); document.getElementById('exportData').onclick = () => this.export(); document.getElementById('clearData').onclick = () => this.clearAll() } start() { this.timer.start(); if (!this.phaseStartedAt && this.timer.cur === 'WORK') { this.phaseStartedAt = new Date().toISOString() } document.getElementById('startBtn').disabled = true; document.getElementById('pauseBtn').disabled = false } pause() { this.timer.pause(); document.getElementById('startBtn').disabled = false; document.getElementById('pauseBtn').disabled = true } reset() { this.timer.reset(); this.phaseStartedAt = null; document.getElementById('startBtn').disabled = false; document.getElementById('pauseBtn').disabled = true } updTimer(r, t) { const m = Math.floor(r / 60), s = r % 60; document.getElementById('timerDisplay').textContent = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`; const c = 2 * Math.PI * 65, o = c * (1 - r / t); document.getElementById('timerProgress').style.strokeDashoffset = o } onState(s) { const el = document.getElementById('timerState'), pg = document.getElementById('timerProgress'); el.textContent = s; if (s !== 'WORK') { el.classList.add('break'); pg.classList.add('break') } else { el.classList.remove('break'); pg.classList.remove('break') } } async onDone(w) { if (w && this.focus) { const t = this.tasks.find(x => x.id === this.focus); if (t) { t.pomodoroCount = (t.pomodoroCount || 0) + 1; await this.db.put('tasks', t); this.render() } if (this.phaseStartedAt) { const cfg = await this.db.get('settings', 'work'); const durationMin = (cfg?.value || 25); await this.db.add('logs', { taskId: this.focus, startedAt: this.phaseStartedAt, endedAt: new Date().toISOString(), durationMin: durationMin, category: t?.category || '' }); this.phaseStartedAt = null } } else { if (w && !this.phaseStartedAt) { this.phaseStartedAt = new Date().toISOString() } } this.beep(); this.notify(w ? '作業完了！' : '休憩終了！', w ? '休憩を取りましょう' : '作業を再開しましょう'); this.toast(w ? 'セッション完了！' : '休憩終了！') } openModal(id = null) { const m = document.getElementById('taskModal'), f = document.getElementById('taskForm'), t = document.getElementById('modalTitle'), dl = document.getElementById('categoryList'); dl.innerHTML = ''; this.cats.forEach(c => { const o = document.createElement('option'); o.value = c; dl.appendChild(o) }); if (id) { const x = this.tasks.find(t => t.id === id); if (x) { t.textContent = 'EDIT'; document.getElementById('taskId').value = x.id; document.getElementById('taskTitle').value = x.title; document.getElementById('taskDescription').value = x.description || ''; document.getElementById('taskCategory').value = x.category || ''; document.getElementById('taskPriority').value = x.priority || 'medium'; document.getElementById('taskDueDate').value = x.dueDate || ''; document.getElementById('taskUrl').value = x.linkUrl || ''; this.updateDueHint() } } else { t.textContent = 'NEW ENTRY'; f.reset(); document.getElementById('taskId').value = ''; const dd = new Date(); dd.setDate(dd.getDate() + 7); document.getElementById('taskDueDate').value = dd.toISOString().slice(0, 10); this.updateDueHint() } m.classList.add('active') } closeModal() { document.getElementById('taskModal').classList.remove('active') } async submit(e) { e.preventDefault(); const id = document.getElementById('taskId').value; const d = { title: document.getElementById('taskTitle').value, description: document.getElementById('taskDescription').value, category: document.getElementById('taskCategory').value, priority: document.getElementById('taskPriority').value, dueDate: document.getElementById('taskDueDate').value, completed: false, pomodoroCount: 0, createdAt: new Date().toISOString() }; if (id) { const ex = this.tasks.find(t => t.id === parseInt(id)); d.id = parseInt(id); d.pomodoroCount = ex?.pomodoroCount || 0; d.createdAt = ex?.createdAt || d.createdAt; await this.db.put('tasks', d); this.toast('更新しました') } else { await this.db.add('tasks', d); this.toast('追加しました') } await this.loadTasks(); this.render(); this.closeModal() } async delTask(id) { if (confirm('削除しますか？')) { await this.db.del('tasks', id); if (this.focus === id) { this.focus = null; this.updFocus() } await this.loadTasks(); this.render(); this.toast('削除しました') } } async doneTask(id) { const t = this.tasks.find(x => x.id === id); if (t) { t.completed = true; t.completedAt = new Date().toISOString(); await this.db.put('tasks', t); if (this.focus === id) { this.focus = null; this.updFocus() } await this.loadTasks(); this.render(); this.toast('アーカイブしました') } } focusTask(id) { if (this.focus === id) { this.focus = null; } else { this.focus = id; } this.updFocus(); this.render() } updFocus() { const el = document.getElementById('currentFocus'); if (this.focus) { const t = this.tasks.find(x => x.id === this.focus); if (t) { el.textContent = t.title; el.classList.remove('empty') } } else { el.textContent = '— 未選択 —'; el.classList.add('empty') } } async saveCfg() { const c = { work: parseInt(document.getElementById('workDuration').value), short: parseInt(document.getElementById('shortBreak').value), long: parseInt(document.getElementById('longBreak').value), sound: parseInt(document.getElementById('soundEnabled').value) }; await this.db.put('settings', { key: 'work', value: c.work }); await this.db.put('settings', { key: 'short', value: c.short }); await this.db.put('settings', { key: 'long', value: c.long }); await this.db.put('settings', { key: 'sound', value: c.sound }); this.timer.set(c); this.toast('保存しました') } async reqNotify() { if ('Notification' in window) { const p = await Notification.requestPermission(); this.toast(p === 'granted' ? '通知ON' : '通知OFF') } else this.toast('非対応') } notify(t, b) { if ('Notification' in window && Notification.permission === 'granted') new Notification(t, { body: b }) } beep() { if (document.getElementById('soundEnabled').value === '0') return; if (!this.audio) this.audio = new (window.AudioContext || window.webkitAudioContext)(); const o = this.audio.createOscillator(), g = this.audio.createGain(); o.connect(g); g.connect(this.audio.destination); o.frequency.value = 800; o.type = 'sine'; g.gain.setValueAtTime(0.3, this.audio.currentTime); g.gain.exponentialRampToValueAtTime(0.01, this.audio.currentTime + 0.5); o.start(); o.stop(this.audio.currentTime + 0.5) } async export() { const d = { tasks: this.tasks, at: new Date().toISOString() }; const b = new Blob([JSON.stringify(d, null, 2)], { type: 'application/json' }); const u = URL.createObjectURL(b); const a = document.createElement('a'); a.href = u; a.download = `pomodoro-${new Date().toISOString().split('T')[0]}.json`; a.click(); URL.revokeObjectURL(u); this.toast('エクスポートしました') } async clearAll() { if (confirm('全データを削除しますか？')) { await this.db.clear('tasks'); await this.db.clear('settings'); this.tasks = []; this.cats.clear(); this.focus = null; this.updFocus(); this.render(); this.toast('削除しました') } } render() { this.renderTasks(); if (this.archiveView === 'logs') { this.renderLogs() } else { this.renderArchive() } this.renderCats() } icon(c) { const m = { '仕事': 'fa-briefcase', '勉強': 'fa-graduation-cap', '読書': 'fa-book', '運動': 'fa-dumbbell', '趣味': 'fa-palette', 'プログラミング': 'fa-code', '会議': 'fa-users', 'メール': 'fa-envelope' }; return m[c] || 'fa-bookmark' } fmtDate(d) { if (!d) return ''; const x = new Date(d); if (Number.isNaN(x.getTime())) return String(d); return x.toLocaleDateString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', weekday: 'short' }) } updateDueHint() { const i = document.getElementById('taskDueDate'), h = document.getElementById('taskDueWeekday'); if (!i || !h) return; if (!i.value) { h.textContent = ''; return } const x = new Date(i.value); if (Number.isNaN(x.getTime())) { h.textContent = ''; return } h.textContent = `WEEKDAY: ${x.toLocaleDateString('ja-JP', { weekday: 'short' })}` } renderTasks() { const g = document.getElementById('taskGrid'), e = document.getElementById('emptyTasks'), a = this.tasks.filter(t => !t.completed); if (!a.length) { g.innerHTML = ''; e.style.display = 'block'; return } e.style.display = 'none'; g.innerHTML = a.map(t => { const od = t.dueDate && new Date(t.dueDate) < new Date(), f = t.id === this.focus; return `<div class="task-card ${f ? 'focused' : ''}" data-id="${t.id}"><div class="task-card-header"><div class="task-thumb"><i class="fas ${this.icon(t.category)}"></i></div><div class="task-info"><div class="task-title">${this.esc(t.title)}</div>${t.category ? `<span class="task-cat">${this.esc(t.category)}</span>` : ''}</div></div><div class="task-meta"><span class="task-pomo"><i class="fas fa-clock"></i> ${t.pomodoroCount || 0}</span>${t.dueDate ? `<span class="task-due ${od ? 'overdue' : ''}">${this.fmtDate(t.dueDate)}</span>` : ''}<span class="priority-${t.priority}"><i class="fas fa-flag"></i></span></div><div class="task-actions"><button class="task-action" onclick="app.focusTask(${t.id})">FOCUS</button><button class="task-action" onclick="app.openModal(${t.id})">EDIT</button><button class="task-action done" onclick="app.doneTask(${t.id})">DONE</button><button class="task-action del" onclick="app.delTask(${t.id})">DEL</button></div></div>` }).join('') } renderArchive() { const l = document.getElementById('archiveList'), e = document.getElementById('emptyArchive'), cf = document.getElementById('filterCategory').value, df = document.getElementById('filterDate').value; let a = this.tasks.filter(t => t.completed); if (cf) a = a.filter(t => t.category === cf); if (df) { const n = new Date(), sd = new Date(n.getFullYear(), n.getMonth(), n.getDate()), sw = new Date(sd); sw.setDate(sw.getDate() - sw.getDay()); const sm = new Date(n.getFullYear(), n.getMonth(), 1); a = a.filter(t => { const c = new Date(t.completedAt); return df === 'today' ? c >= sd : df === 'week' ? c >= sw : df === 'month' ? c >= sm : true }) } if (!a.length) { l.innerHTML = ''; e.style.display = 'block'; return } e.style.display = 'none'; l.innerHTML = a.map((t, i) => `<div class="archive-item"><div class="archive-num">#${String(i + 1).padStart(3, '0')}</div><div class="archive-content"><div class="archive-title">${this.esc(t.title)}</div><div class="archive-meta"><span><i class="fas fa-clock"></i> ${t.pomodoroCount || 0}</span>${t.category ? `<span><i class="fas fa-tag"></i> ${this.esc(t.category)}</span>` : ''}<span><i class="fas fa-calendar-check"></i> ${t.completedAt ? new Date(t.completedAt).toLocaleDateString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', weekday: 'short' }) : ''}</span></div></div></div>`).join('') } renderCats() { const s = document.getElementById('filterCategory'), v = s.value; s.innerHTML = '<option value="">ALL</option>'; this.cats.forEach(c => { const o = document.createElement('option'); o.value = c; o.textContent = c; s.appendChild(o) }); s.value = v } async renderLogs() { const l = document.getElementById('archiveList'), e = document.getElementById('emptyArchive'); const logs = await this.db.getAll('logs'); const sorted = logs.sort((a, b) => new Date(b.endedAt) - new Date(a.endedAt)); if (!sorted.length) { l.innerHTML = ''; e.style.display = 'block'; return } e.style.display = 'none'; l.innerHTML = sorted.map((lg, i) => { const et = new Date(lg.endedAt); const taskTitle = this.tasks.find(t => t.id === lg.taskId)?.title || 'Unknown'; return `<div class="archive-item"><div class="archive-num">#${String(i + 1).padStart(3, '0')}</div><div class="archive-content"><div class="archive-title">${this.esc(taskTitle)}</div><div class="archive-meta"><span><i class="fas fa-hourglass-end"></i> ${lg.durationMin || 0}分</span>${lg.category ? `<span><i class="fas fa-tag"></i> ${this.esc(lg.category)}</span>` : ''}<span><i class="fas fa-calendar-check"></i> ${et.toLocaleDateString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', weekday: 'short' })}</span></div></div></div>` }).join('') } esc(t) { const d = document.createElement('div'); d.textContent = t; return d.innerHTML } toast(m) { const t = document.getElementById('toast'); t.textContent = m; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2500) }
+
+            focusTask(id) {
+                this.focus = (this.focus === id) ? null : id;
+                this.updFocus();
+                this.render();
+            }
+
+            updFocus() {
+                const el = document.getElementById('currentFocus');
+                if (this.focus) {
+                    const t = this.tasks.find(x => x.id === this.focus);
+                    if (t) { el.textContent = t.title; el.classList.remove('empty'); return; }
+                }
+                el.textContent = '— 未選択 —';
+                el.classList.add('empty');
+            }
+
+            // ===== SETTINGS / DATA =====
+            async saveCfg() {
+                const c = {
+                    work: parseInt(document.getElementById('workDuration').value, 10),
+                    short: parseInt(document.getElementById('shortBreak').value, 10),
+                    long: parseInt(document.getElementById('longBreak').value, 10),
+                    sound: parseInt(document.getElementById('soundEnabled').value, 10)
+                };
+                await this.db.put('settings', { key: 'work', value: c.work });
+                await this.db.put('settings', { key: 'short', value: c.short });
+                await this.db.put('settings', { key: 'long', value: c.long });
+                await this.db.put('settings', { key: 'sound', value: c.sound });
+                this.timer.set(c);
+                this.toast('保存しました');
+            }
+
+            async reqNotify() {
+                if (!('Notification' in window)) { this.toast('非対応'); return; }
+                const p = await Notification.requestPermission();
+                this.toast(p === 'granted' ? '通知ON' : '通知OFF');
+            }
+
+            notify(t, b) {
+                if ('Notification' in window && Notification.permission === 'granted') {
+                    new Notification(t, { body: b });
+                }
+            }
+
+            beep() {
+                if (document.getElementById('soundEnabled').value === '0') return;
+                if (!this.audio) this.audio = new (window.AudioContext || window.webkitAudioContext)();
+                const o = this.audio.createOscillator(), g = this.audio.createGain();
+                o.connect(g); g.connect(this.audio.destination);
+                o.frequency.value = 800; o.type = 'sine';
+                g.gain.setValueAtTime(0.3, this.audio.currentTime);
+                g.gain.exponentialRampToValueAtTime(0.01, this.audio.currentTime + 0.5);
+                o.start(); o.stop(this.audio.currentTime + 0.5);
+            }
+
+            async export() {
+                const d = { tasks: this.tasks, at: new Date().toISOString() };
+                const b = new Blob([JSON.stringify(d, null, 2)], { type: 'application/json' });
+                const u = URL.createObjectURL(b);
+                const a = document.createElement('a');
+                a.href = u;
+                a.download = `pomodoro-${new Date().toISOString().split('T')[0]}.json`;
+                a.click();
+                URL.revokeObjectURL(u);
+                this.toast('エクスポートしました');
+            }
+
+            async clearAll() {
+                if (!confirm('全データを削除しますか？')) return;
+                await this.db.clear('tasks');
+                await this.db.clear('settings');
+                await this.db.clear('logs');
+                this.tasks = [];
+                this.cats.clear();
+                this.focus = null;
+                this.updFocus();
+                this.render();
+                this.toast('削除しました');
+            }
+
+            // ===== RENDER =====
+            render() {
+                this.renderTasks();
+                if (this.archiveView === 'logs') this.renderLogs();
+                else this.renderArchive();
+                this.renderCats();
+            }
+
+            icon(c) {
+                const m = { '仕事': 'fa-briefcase', '勉強': 'fa-graduation-cap', '読書': 'fa-book', '運動': 'fa-dumbbell', '趣味': 'fa-palette', 'プログラミング': 'fa-code', '会議': 'fa-users', 'メール': 'fa-envelope' };
+                return m[c] || 'fa-bookmark';
+            }
+
+            fmtDate(d) {
+                if (!d) return '';
+                const x = new Date(d);
+                if (Number.isNaN(x.getTime())) return String(d);
+                return x.toLocaleDateString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', weekday: 'short' });
+            }
+
+            updateDueHint() {
+                const i = document.getElementById('taskDueDate'),
+                    h = document.getElementById('taskDueWeekday');
+                if (!i || !h) return;
+                if (!i.value) { h.textContent = ''; return; }
+                const x = new Date(i.value);
+                if (Number.isNaN(x.getTime())) { h.textContent = ''; return; }
+                h.textContent = `WEEKDAY: ${x.toLocaleDateString('ja-JP', { weekday: 'short' })}`;
+            }
+
+            esc(t) {
+                const d = document.createElement('div');
+                d.textContent = String(t ?? '');
+                return d.innerHTML;
+            }
+
+            // ===== SEARCH-PARAMETERS UI =====
+            renderCategoryFilters(tasks) {
+                const container = document.getElementById('categoryFilters');
+                if (!container) return;
+
+                const catCount = {};
+                let uncategorizedCount = 0;
+                tasks.forEach(t => {
+                    if (t.category) catCount[t.category] = (catCount[t.category] || 0) + 1;
+                    else uncategorizedCount++;
+                });
+
+                const sorted = Object.entries(catCount).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+                const parts = sorted.map(([cat]) => {
+                    const isActive = this.filterCategories.has(cat);
+                    return `<button class="tag-btn ${isActive ? 'active' : ''}" data-cat="${this.esc(cat)}">${this.esc(cat)}</button>`;
+                });
+
+                if (uncategorizedCount > 0) {
+                    const key = '__UNCATEGORIZED__';
+                    const isActive = this.filterCategories.has(key);
+                    parts.push(`<button class="tag-btn ${isActive ? 'active' : ''}" data-cat="${key}">UNCATEGORIZED</button>`);
+                }
+
+                container.innerHTML = parts.join('');
+            }
+
+            renderPriorityFilters(tasks) {
+                const container = document.getElementById('priorityFilters');
+                if (!container) return;
+
+                // show only if at least one active task has a priority
+                const hasAny = tasks.some(t => t.priority);
+                if (!hasAny) { container.innerHTML = ''; return; }
+
+                const btn = (p, label) => {
+                    const isActive = this.priorityFilter.has(p);
+                    return `<button class="tag-btn ${isActive ? 'active' : ''}" data-pri="${p}">${label}</button>`;
+                };
+
+                container.innerHTML = [
+                    btn('high', 'HIGH'),
+                    btn('medium', 'MEDIUM'),
+                    btn('low', 'LOW')
+                ].join('');
+            }
+
+            clearFilters() {
+                this.filterCategories.clear();
+                this.priorityFilter.clear();
+                this.render();
+            }
+
+            // ===== TASK LIST =====
+            dueDateAscNullLast(a, b) {
+                const ad = a?.dueDate ? new Date(a.dueDate) : null;
+                const bd = b?.dueDate ? new Date(b.dueDate) : null;
+                const at = ad && !Number.isNaN(ad.getTime()) ? ad.getTime() : null;
+                const bt = bd && !Number.isNaN(bd.getTime()) ? bd.getTime() : null;
+                if (at === null && bt === null) return 0;
+                if (at === null) return 1;
+                if (bt === null) return -1;
+                return at - bt;
+            }
+
+            renderTasks() {
+                const g = document.getElementById('taskGrid');
+                const e = document.getElementById('emptyTasks');
+
+                // 1) base list
+                let list = this.tasks.filter(t => !t.completed);
+
+                // update filter chips from the unfiltered active list (so counts are stable)
+                this.renderCategoryFilters(list);
+                this.renderPriorityFilters(list);
+
+                // 2) category filter (OR)
+                if (this.filterCategories instanceof Set && this.filterCategories.size > 0) {
+                    const includeUn = this.filterCategories.has('__UNCATEGORIZED__');
+                    list = list.filter(t => {
+                        if (!t.category) return includeUn;
+                        return this.filterCategories.has(t.category);
+                    });
+                }
+
+                // 3) priority filter (Set && size>0 => match only; undefined excluded)
+                if (this.priorityFilter instanceof Set && this.priorityFilter.size > 0) {
+                    const normalized = new Set([...this.priorityFilter].map(p => String(p).toLowerCase()));
+                    list = list.filter(t => t.priority && normalized.has(String(t.priority).toLowerCase()));
+                }
+
+                // 4) sort once
+                list.sort((a, b) => this.dueDateAscNullLast(a, b));
+
+                // 5) empty once
+                if (!list.length) {
+                    g.innerHTML = '';
+                    e.style.display = 'block';
+                    return;
+                }
+                e.style.display = 'none';
+
+                // 6) render once
+                const now = new Date();
+                g.innerHTML = list.map(t => {
+                    const f = t.id === this.focus;
+
+                    let dueClass = '';
+                    if (t.dueDate) {
+                        const due = new Date(t.dueDate);
+                        if (!Number.isNaN(due.getTime())) {
+                            const hoursUntil = (due - now) / (1000 * 60 * 60);
+                            if (hoursUntil < 0) dueClass = 'due-overdue';
+                            else if (hoursUntil < 48) dueClass = 'due-soon';
+                        }
+                    }
+
+                    const linkHtml = t.linkUrl
+                        ? `<a href="${this.esc(t.linkUrl)}" target="_blank" rel="noopener noreferrer" class="task-link-icon" title="${this.esc(t.linkUrl)}"><i class="fas fa-link"></i></a>`
+                        : '';
+
+                    const priorityIcon = t.priority
+                        ? `<span class="priority-${this.esc(String(t.priority).toLowerCase())}"><i class="fas fa-flag"></i></span>`
+                        : '';
+
+                    return `<div class="task-card ${f ? 'focused' : ''}" data-id="${t.id}">
+                        <div class="task-card-header">
+                            <div class="task-thumb"><i class="fas ${this.icon(t.category)}"></i></div>
+                            <div class="task-info">
+                                <div class="task-title">${this.esc(t.title)}${linkHtml}</div>
+                                ${t.category ? `<span class="task-cat">${this.esc(t.category)}</span>` : ''}
+                            </div>
+                        </div>
+                        <div class="task-meta">
+                            <span class="task-pomo"><i class="fas fa-clock"></i> ${t.pomodoroCount || 0}</span>
+                            ${t.dueDate ? `<span class="task-due ${dueClass}">${this.fmtDate(t.dueDate)}</span>` : ''}
+                            ${priorityIcon}
+                        </div>
+                        <div class="task-actions">
+                            <button class="task-action" onclick="app.focusTask(${t.id})">FOCUS</button>
+                            <button class="task-action" onclick="app.openModal(${t.id}, 'edit')">EDIT</button>
+                            <button class="task-action done" onclick="app.doneTask(${t.id})">DONE</button>
+                            <button class="task-action del" onclick="app.delTask(${t.id})">DEL</button>
+                        </div>
+                    </div>`;
+                }).join('');
+            }
+
+            // ===== ARCHIVE / LOGS =====
+            renderArchive() {
+                const l = document.getElementById('archiveList');
+                const e = document.getElementById('emptyArchive');
+                const cf = document.getElementById('filterCategory').value;
+                const df = document.getElementById('filterDate').value;
+
+                let a = this.tasks.filter(t => t.completed);
+
+                if (cf) a = a.filter(t => t.category === cf);
+                if (df) {
+                    const n = new Date();
+                    const sd = new Date(n.getFullYear(), n.getMonth(), n.getDate());
+                    const sw = new Date(sd); sw.setDate(sw.getDate() - sw.getDay());
+                    const sm = new Date(n.getFullYear(), n.getMonth(), 1);
+
+                    a = a.filter(t => {
+                        const c = new Date(t.completedAt);
+                        return df === 'today' ? c >= sd
+                            : df === 'week' ? c >= sw
+                                : df === 'month' ? c >= sm
+                                    : true;
+                    });
+                }
+
+                if (!a.length) { l.innerHTML = ''; e.style.display = 'block'; return; }
+                e.style.display = 'none';
+
+                l.innerHTML = a.map((t, i) => `
+                    <div class="archive-item" data-taskid="${t.id}">
+                        <div class="archive-num">#${String(i + 1).padStart(3, '0')}</div>
+                        <div class="archive-content">
+                            <div class="archive-title">${this.esc(t.title)}</div>
+                            <div class="archive-meta">
+                                <span><i class="fas fa-clock"></i> ${t.pomodoroCount || 0}</span>
+                                ${t.category ? `<span><i class="fas fa-tag"></i> ${this.esc(t.category)}</span>` : ''}
+                                <span><i class="fas fa-calendar-check"></i> ${t.completedAt ? new Date(t.completedAt).toLocaleDateString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', weekday: 'short' }) : ''}</span>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            renderCats() {
+                const s = document.getElementById('filterCategory'), v = s.value;
+                s.innerHTML = '<option value="">ALL</option>';
+                this.cats.forEach(c => {
+                    const o = document.createElement('option');
+                    o.value = c; o.textContent = c;
+                    s.appendChild(o);
+                });
+                s.value = v;
+            }
+
+            async renderLogs() {
+                const l = document.getElementById('archiveList'), e = document.getElementById('emptyArchive');
+                const logs = await this.db.getAll('logs');
+                const sorted = logs.sort((a, b) => new Date(b.endedAt) - new Date(a.endedAt));
+                if (!sorted.length) { l.innerHTML = ''; e.style.display = 'block'; return; }
+                e.style.display = 'none';
+
+                l.innerHTML = sorted.map((lg, i) => {
+                    const et = new Date(lg.endedAt);
+                    const taskTitle = this.tasks.find(t => t.id === lg.taskId)?.title || 'Unknown';
+                    return `<div class="archive-item">
+                        <div class="archive-num">#${String(i + 1).padStart(3, '0')}</div>
+                        <div class="archive-content">
+                            <div class="archive-title">${this.esc(taskTitle)}</div>
+                            <div class="archive-meta">
+                                <span><i class="fas fa-hourglass-end"></i> ${lg.durationMin || 0}分</span>
+                                ${lg.category ? `<span><i class="fas fa-tag"></i> ${this.esc(lg.category)}</span>` : ''}
+                                <span><i class="fas fa-calendar-check"></i> ${et.toLocaleDateString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', weekday: 'short' })}</span>
+                            </div>
+                        </div>
+                    </div>`;
+                }).join('');
+            }
+
+            toast(m) {
+                const t = document.getElementById('toast');
+                t.textContent = m;
+                t.classList.add('show');
+                setTimeout(() => t.classList.remove('show'), 2500);
+            }
         }
 
-        window.app = new App(); window.app.init().catch(console.error);
-    </script>
-    <script>
-        // Extend App with view/undo functionality
-        const origOpenModal = window.app.openModal.bind(window.app);
-        window.app.openModal = function (id = null, mode = 'new') {
-            const m = document.getElementById('taskModal'), f = document.getElementById('taskForm'), t = document.getElementById('modalTitle');
-            const isView = mode === 'view';
-            const saveBtn = f.querySelector('[type="submit"]');
-            let undoBtn = document.getElementById('undoTask');
-            const urlEl = document.getElementById('taskUrl');
-            const urlOpenBtn = document.getElementById('openUrlBtn');
-
-            // Call original setup
-            origOpenModal(id);
-
-            // Handle URL field setup
-            if (id) {
-                const x = this.tasks.find(x => x.id === id);
-                if (x) {
-                    if (urlEl) urlEl.value = x.linkUrl || '';
-                    const isArchived = x.completed;
-                    if (isView) {
-                        t.textContent = 'VIEW TASK';
-                        ['taskTitle', 'taskDescription', 'taskCategory', 'taskPriority', 'taskDueDate', 'taskUrl'].forEach(i => {
-                            const el = document.getElementById(i);
-                            if (el) { el.disabled = true; if (el.tagName === 'INPUT') el.readOnly = true }
-                        });
-                    } else {
-                        if (urlEl) { urlEl.disabled = false; urlEl.readOnly = false; }
-                    }
-                    saveBtn.style.display = isView ? 'none' : '';
-                    if (undoBtn) undoBtn.style.display = 'none';
-                    if (isView && isArchived) {
-                        if (!undoBtn) {
-                            undoBtn = document.createElement('button');
-                            undoBtn.type = 'button';
-                            undoBtn.id = 'undoTask';
-                            undoBtn.className = 'form-btn';
-                            undoBtn.textContent = 'UNDO';
-                            undoBtn.style.background = 'var(--success)';
-                            undoBtn.style.borderColor = 'var(--success)';
-                            undoBtn.style.color = 'var(--bg-deep)';
-                            f.querySelector('.form-actions').insertBefore(undoBtn, saveBtn);
-                        }
-                        undoBtn.style.display = '';
-                        undoBtn.onclick = () => { this.unDoneTask(parseInt(document.getElementById('taskId').value)); this.closeModal() };
-                    }
-                }
-            } else {
-                if (urlEl) { urlEl.value = ''; urlEl.disabled = false; }
-                saveBtn.style.display = '';
-                if (undoBtn) undoBtn.style.display = 'none';
-            }
-
-            // Setup URL button functionality for NEW/EDIT mode
-            if (urlEl && urlOpenBtn) {
-                const updateUrlBtn = () => {
-                    const v = urlEl.value;
-                    const isValid = v && (v.startsWith('http://') || v.startsWith('https://'));
-                    urlOpenBtn.disabled = !isValid;
-                    urlOpenBtn.title = isValid ? v : 'Valid URL required';
-                };
-                if (mode !== 'view') {
-                    urlEl.oninput = updateUrlBtn;
-                    urlOpenBtn.type = 'button';
-                    urlOpenBtn.onclick = (e) => { e.preventDefault(); const v = urlEl.value; if (v) window.open(v, '_blank', 'noopener,noreferrer'); };
-                }
-                updateUrlBtn();
-            }
-        };
-
-        const origSubmit = window.app.submit.bind(window.app);
-        window.app.submit = async function (e) {
-            e.preventDefault();
-            const id = document.getElementById('taskId').value;
-            const d = {
-                title: document.getElementById('taskTitle').value,
-                description: document.getElementById('taskDescription').value,
-                category: document.getElementById('taskCategory').value,
-                priority: document.getElementById('taskPriority').value,
-                dueDate: document.getElementById('taskDueDate').value,
-                linkUrl: document.getElementById('taskUrl')?.value || '',
-                completed: false,
-                pomodoroCount: 0,
-                createdAt: new Date().toISOString()
-            };
-            if (id) {
-                const ex = this.tasks.find(t => t.id === parseInt(id));
-                d.id = parseInt(id);
-                d.pomodoroCount = ex?.pomodoroCount || 0;
-                d.createdAt = ex?.createdAt || d.createdAt;
-                d.completed = ex?.completed || false;
-                d.completedAt = ex?.completedAt;
-                d.linkUrl = d.linkUrl || (ex?.linkUrl || '');
-                await this.db.put('tasks', d);
-                this.toast('更新しました');
-            } else {
-                await this.db.add('tasks', d);
-                this.toast('追加しました');
-            }
-            await this.loadTasks();
-            this.render();
-            this.closeModal();
-        };
-
-        // Wire up archive item clicks to open in view mode
-        const origRenderArchive = window.app.renderArchive.bind(window.app);
-        window.app.renderArchive = function () {
-            origRenderArchive();
-            const archiveItems = document.querySelectorAll('.archive-item');
-            archiveItems.forEach(item => {
-                const id = this.tasks.find(t => t.completed)?.id;
-                if (id) item.style.cursor = 'pointer';
-                item.onclick = (e) => {
-                    const num = item.querySelector('.archive-num').textContent;
-                    const idx = parseInt(num.replace('#', '')) - 1;
-                    const completed = this.tasks.filter(t => t.completed);
-                    if (completed[idx]) this.openModal(completed[idx].id, 'view');
-                };
-            });
-        };
-
-        // Override renderTasks to include link icons and category filter
-        const origRenderTasks = window.app.renderTasks.bind(window.app);
-        window.app.renderTasks = function () {
-            const g = document.getElementById('taskGrid'), e = document.getElementById('emptyTasks'), a = this.tasks.filter(t => !t.completed);
-            // Apply category filter (OR condition)
-            let filtered = a;
-            if (this.filterCategories.size > 0) {
-                // If __UNCATEGORIZED__ is selected, include tasks with falsy category
-                const includeUn = this.filterCategories.has('__UNCATEGORIZED__');
-                filtered = a.filter(t => {
-                    if (!t.category) return includeUn;
-                    return this.filterCategories.has(t.category);
-                });
-            }
-            this.renderCategoryFilters(a);
-            if (!filtered.length) { g.innerHTML = ''; e.style.display = 'block'; return }
-            e.style.display = 'none';
-            g.innerHTML = filtered.map(t => {
-                const now = new Date(), f = t.id === this.focus;
-                let dueClass = '';
-                if (t.dueDate) {
-                    const due = new Date(t.dueDate);
-                    const hoursUntil = (due - now) / (1000 * 60 * 60);
-                    if (hoursUntil < 0) dueClass = 'due-overdue';
-                    else if (hoursUntil < 48) dueClass = 'due-soon';
-                }
-                const linkHtml = t.linkUrl ? `<a href="${this.esc(t.linkUrl)}" target="_blank" rel="noopener noreferrer" class="task-link-icon" title="${this.esc(t.linkUrl)}"><i class="fas fa-link"></i></a>` : '';
-                return `<div class="task-card ${f ? 'focused' : ''}" data-id="${t.id}"><div class="task-card-header"><div class="task-thumb"><i class="fas ${this.icon(t.category)}"></i></div><div class="task-info"><div class="task-title">${this.esc(t.title)}${linkHtml}</div>${t.category ? `<span class="task-cat">${this.esc(t.category)}</span>` : ''}</div></div><div class="task-meta"><span class="task-pomo"><i class="fas fa-clock"></i> ${t.pomodoroCount || 0}</span>${t.dueDate ? `<span class="task-due ${dueClass}">${this.fmtDate(t.dueDate)}</span>` : ''}<span class="priority-${t.priority}"><i class="fas fa-flag"></i></span></div><div class="task-actions"><button class="task-action" onclick="app.focusTask(${t.id})">FOCUS</button><button class="task-action" onclick="app.openModal(${t.id})">EDIT</button><button class="task-action done" onclick="app.doneTask(${t.id})">DONE</button><button class="task-action del" onclick="app.delTask(${t.id})">DEL</button></div></div>`
-            }).join('');
-        };
-
-        // Add renderCategoryFilters method
-        window.app.renderCategoryFilters = function (tasks) {
-            const container = document.getElementById('categoryFilters');
-            if (!container) return;
-            // Count categories by frequency (descending), then alphabetically
-            const catCount = {};
-            let uncategorizedCount = 0;
-            tasks.forEach(t => {
-                if (t.category) catCount[t.category] = (catCount[t.category] || 0) + 1;
-                else uncategorizedCount++;
-            });
-            const sorted = Object.entries(catCount).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
-            // Render normal categories
-            const parts = sorted.map(([cat]) => {
-                const isActive = this.filterCategories.has(cat);
-                return `<button class="tag-btn ${isActive ? 'active' : ''}" data-cat="${cat}">${cat}</button>`;
-            });
-            // Append UNCATEGORIZED at the end if present
-            if (uncategorizedCount > 0) {
-                const key = '__UNCATEGORIZED__';
-                const isActive = this.filterCategories.has(key);
-                parts.push(`<button class="tag-btn ${isActive ? 'active' : ''}" data-cat="${key}">UNCATEGORIZED</button>`);
-            }
-            container.innerHTML = parts.join('');
-            // Attach click handlers for toggle
-            container.querySelectorAll('.tag-btn').forEach(btn => {
-                btn.onclick = () => {
-                    const cat = btn.dataset.cat;
-                    if (this.filterCategories.has(cat)) {
-                        this.filterCategories.delete(cat);
-                    } else {
-                        this.filterCategories.add(cat);
-                    }
-                    this.render();
-                };
-            });
-        };
-
-        // Add clearFilters method
-        window.app.clearFilters = function () {
-            this.filterCategories.clear();
-            this.render();
-        };
+        window.app = new App();
+ window.app.init().catch(console.error);
     </script>
 </body>
 
 </html>
 
-<!-- PATCH-CHECK: 2026-02-04T16:xx -->
+</html>
