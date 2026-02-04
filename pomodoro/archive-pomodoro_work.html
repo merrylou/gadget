@@ -1189,21 +1189,21 @@
         // Override renderTasks to include link icons and category filter
         const origRenderTasks = window.app.renderTasks.bind(window.app);
         window.app.renderTasks = function () {
-            const g = document.getElementById('taskGrid'), e = document.getElementById('emptyTasks'), a = this.tasks.filter(t => !t.completed);
+            const g = document.getElementById('taskGrid'), e = document.getElementById('emptyTasks'), tasks = this.tasks.filter(t => !t.completed);
             // Apply category filter (OR condition)
-            let filtered = a;
+            let list = tasks;
             if (this.filterCategories.size > 0) {
                 // If __UNCATEGORIZED__ is selected, include tasks with falsy category
                 const includeUn = this.filterCategories.has('__UNCATEGORIZED__');
-                filtered = a.filter(t => {
+                list = tasks.filter(t => {
                     if (!t.category) return includeUn;
                     return this.filterCategories.has(t.category);
                 });
             }
-            this.renderCategoryFilters(a);
-            if (!filtered.length) { g.innerHTML = ''; e.style.display = 'block'; return }
+            this.renderCategoryFilters(tasks);
+            if (!list.length) { g.innerHTML = ''; e.style.display = 'block'; return }
             e.style.display = 'none';
-            g.innerHTML = filtered.map(t => {
+            g.innerHTML = list.map(t => {
                 const now = new Date(), f = t.id === this.focus;
                 let dueClass = '';
                 if (t.dueDate) {
@@ -1264,5 +1264,3 @@
 </body>
 
 </html>
-
-<!-- PATCH-CHECK: 2026-02-04T16:xx -->
