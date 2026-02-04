@@ -1,0 +1,131 @@
+name: PR Guardrails
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (full history for diff)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Compute changed files
+        id: diff
+        run: |
+          set -euo pipefail
+          git fetch origin "${{ github.base_ref }}" --depth=1 || true
+          git diff --name-only "origin/${{ github.base_ref }}"..."${{ github.sha }}" > changed_files.txt
+          echo "Changed files:"
+          cat changed_files.txt
+
+      - name: Enforce allowed changed files
+        run: |
+          set -euo pipefail
+          python - << 'PY'
+          import fnmatch, sys, pathlib
+
+          allowed = [
+            "pomodoro/archive-pomodoro_work.html",
+            ".github/workflows/guard.yml",
+          ]
+
+          changed = [line.strip() for line in pathlib.Path("changed_files.txt").read_text(encoding="utf-8").splitlines() if line.strip()]
+
+          def is_allowed(path: str) -> bool:
+            return any(fnmatch.fnmatch(path, pat) for pat in allowed)
+
+          bad = [p for p in changed if not is_allowed(p)]
+
+          if bad:
+            print("❌ Disallowed file changes detected:")
+            for p in bad:
+              print(f" - {p}")
+            print("\nAllowed files are:")
+            for a in allowed:
+              print(f" - {a}")
+            sys.exit(1)
+
+          print("✅ Changed files are within the allowed list.")
+          PY
+
+      - name: Block PATCH-CHECK markers
+        run: |
+          set -euo pipefail
+          python - << 'PY'
+          import pathlib, sys
+
+          changed = [line.strip() for line in pathlib.Path("changed_files.txt").read_text(encoding="utf-8").splitlines() if line.strip()]
+          hit = []
+
+          for p in changed:
+            if p == ".github/workflows/guard.yml":
+              continue
+            fp = pathlib.Path(p)
+            if not fp.exists() or fp.is_dir():
+              continue
+            try:
+              text = fp.read_text(encoding="utf-8", errors="replace")
+            except Exception as e:
+              print(f"⚠️ Could not read {p}: {e}")
+              continue
+            if "PATCH-CHECK" in text:
+              hit.append(p)
+
+          if hit:
+            print("❌ PATCH-CHECK marker found in these files:")
+            for p in hit:
+              print(f" - {p}")
+            sys.exit(1)
+
+          print("✅ No PATCH-CHECK markers found.")
+          PY
+
+      - name: Block bidirectional/unicode control characters
+        run: |
+          set -euo pipefail
+          python - << 'PY'
+          import pathlib, sys
+
+          # Common bidi / directionality controls + marks that trigger GitHub warning
+          banned = {
+            "\u202A": "LRE", "\u202B": "RLE", "\u202C": "PDF", "\u202D": "LRO", "\u202E": "RLO",
+            "\u2066": "LRI", "\u2067": "RLI", "\u2068": "FSI", "\u2069": "PDI",
+            "\u200E": "LRM", "\u200F": "RLM",
+          }
+
+          def find_banned(s: str):
+            hits = []
+            for i, ch in enumerate(s):
+              if ch in banned:
+                hits.append((i, ch, banned[ch]))
+            return hits
+
+          changed = [line.strip() for line in pathlib.Path("changed_files.txt").read_text(encoding="utf-8").splitlines() if line.strip()]
+          offenders = {}
+
+          for p in changed:
+            if p == ".github/workflows/guard.yml":
+              continue
+            fp = pathlib.Path(p)
+            if not fp.exists() or fp.is_dir():
+              continue
+            text = fp.read_text(encoding="utf-8", errors="replace")
+            hits = find_banned(text)
+            if hits:
+              offenders[p] = hits[:20]  # cap output
+
+          if offenders:
+            print("❌ Bidirectional/unicode control characters detected (GitHub warning source).")
+            for p, hits in offenders.items():
+              print(f"\nFile: {p}")
+              for idx, ch, name in hits:
+                print(f" - pos {idx}: U+{ord(ch):04X} ({name})")
+            print("\nFix: retype the affected lines (no copy/paste) or remove invisible characters.")
+            sys.exit(1)
+
+          print("✅ No bidi/unicode control characters detected.")
+          PY
